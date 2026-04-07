@@ -5,14 +5,14 @@
   "tabs": {
     "overview": "개요",
     "instructions": "지침",
+    "rules": "규칙",
     "skills": "스킬",
     "connectors": "MCP",
     "hooks": "훅",
     "permissions": "권한",
     "agentsDef": "에이전트",
     "plugins": "플러그인",
-    "monitor": "모니터",
-    "capabilities": "능력 맵"
+    "monitor": "모니터"
   },
   "common": {
     "save": "저장",
@@ -34,11 +34,12 @@
     "plugin": "플러그인",
     "enabled": "활성",
     "disabled": "비활성",
-    "registerProjects": "설정에서 프로젝트를 등록하세요"
+    "registerProjects": "설정에서 프로젝트를 등록하세요",
+    "projectOnly": "프로젝트만"
   },
   "overview": {
     "title": "대시보드 개요",
-    "instructions": "지침 섹션",
+    "instructions": "지침 파일",
     "rules": "규칙",
     "skills": "스킬",
     "hooks": "훅",
@@ -48,7 +49,7 @@
     "preview": "지침 미리보기"
   },
   "instructions": {
-    "globalTitle": "글로벌 지침",
+    "globalTitle": "지침",
     "projectTitle": "프로젝트 지침",
     "addSection": "섹션 추가",
     "addRule": "규칙 추가",
@@ -56,6 +57,9 @@
     "saved": "지침이 저장되었습니다",
     "noInstructions": "지침 파일이 없습니다",
     "registerProjects": "설정에서 프로젝트를 등록하세요"
+  },
+  "rules": {
+    "title": "규칙"
   },
   "skills": {
     "title": "스킬 관리",
@@ -84,7 +88,7 @@
     "scope": "범위"
   },
   "settings": {
-    "title": "설정 편집기",
+    "title": "설정",
     "saved": "설정이 저장되었습니다",
     "invalidJson": "유효하지 않은 JSON입니다",
     "backup": "백업이 생성되었습니다",

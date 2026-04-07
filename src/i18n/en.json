@@ -5,14 +5,14 @@
   "tabs": {
     "overview": "Overview",
     "instructions": "Instructions",
+    "rules": "Rules",
     "skills": "Skills",
     "connectors": "MCP",
     "hooks": "Hooks",
     "permissions": "Permissions",
     "agentsDef": "Agents",
     "plugins": "Plugins",
-    "monitor": "Monitor",
-    "capabilities": "Capabilities"
+    "monitor": "Monitor"
   },
   "common": {
     "save": "Save",
@@ -34,11 +34,12 @@
     "plugin": "Plugin",
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "registerProjects": "Register projects in Settings first"
+    "registerProjects": "Register projects in Settings first",
+    "projectOnly": "Project Only"
   },
   "overview": {
     "title": "Dashboard Overview",
-    "instructions": "Instruction Sections",
+    "instructions": "Instruction Files",
     "rules": "Rules",
     "skills": "Skills",
     "hooks": "Hooks",
@@ -48,7 +49,7 @@
     "preview": "Instructions Preview"
   },
   "instructions": {
-    "globalTitle": "Global Instructions",
+    "globalTitle": "Instructions",
     "projectTitle": "Project Instructions",
     "addSection": "Add Section",
     "addRule": "Add Rule",
@@ -56,6 +57,9 @@
     "saved": "Instructions saved",
     "noInstructions": "No instruction file found",
     "registerProjects": "Register projects in Settings to manage project instructions"
+  },
+  "rules": {
+    "title": "Rules"
   },
   "skills": {
     "title": "Skills Management",
