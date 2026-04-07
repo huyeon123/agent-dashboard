@@ -1,21 +1,20 @@
 import { useFetch } from '../../hooks/use-fetch';
+import { useI18n } from '../../i18n';
 import type { AgentConfig } from '../../types/agent';
 import { getAgentSupports } from '../../types/agent';
 
 interface FeatureRow {
   key: keyof ReturnType<typeof getAgentSupports>;
-  label: string;
-  description: string;
 }
 
 const FEATURES: FeatureRow[] = [
-  { key: 'settings', label: 'Settings', description: '설정 파일 지원' },
-  { key: 'skills', label: 'Skills', description: '스킬/커스텀 명령 지원' },
-  { key: 'commands', label: 'Commands', description: '슬래시 명령 지원' },
-  { key: 'hooks', label: 'Hooks', description: '이벤트 훅 시스템' },
-  { key: 'agentDefs', label: 'Agent Defs', description: '에이전트 정의 파일' },
-  { key: 'mcpServers', label: 'MCP', description: 'MCP 서버 연동' },
-  { key: 'plugins', label: 'Plugins', description: '플러그인 시스템' },
+  { key: 'settings' },
+  { key: 'skills' },
+  { key: 'commands' },
+  { key: 'hooks' },
+  { key: 'agentDefs' },
+  { key: 'mcpServers' },
+  { key: 'plugins' },
 ];
 
 function Check({ supported }: { supported: boolean }) {
@@ -41,6 +40,7 @@ const AGENT_ICON_COLORS: Record<string, string> = {
 };
 
 export function CapabilitiesPanel() {
+  const { t, tf } = useI18n();
   const { data: agents, loading, error, reload } = useFetch<AgentConfig[]>('/api/agent-types');
 
   const enabledAgents = agents?.filter((a) => a.enabled) ?? [];
@@ -57,12 +57,12 @@ export function CapabilitiesPanel() {
     <div className="h-full flex flex-col gap-4 p-4 overflow-auto">
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
-        <h2 className="text-xl font-semibold text-text-primary">Capabilities</h2>
+        <h2 className="text-xl font-semibold text-text-primary">{t('capabilities.title')}</h2>
         <button
           onClick={reload}
           className="px-3 py-1.5 text-sm rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
         >
-          새로고침
+          {t('common.refresh')}
         </button>
       </div>
 
@@ -99,7 +99,7 @@ export function CapabilitiesPanel() {
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-bold font-mono text-text-primary">{count}</span>
-                  <span className="text-xs text-text-muted">/ {totalFeatures} 기능</span>
+                  <span className="text-xs text-text-muted">{tf('capabilities.featureCount', { count: totalFeatures })}</span>
                 </div>
                 <div className="w-full bg-bg-tertiary rounded-full h-1.5 mt-1">
                   <div
@@ -117,7 +117,7 @@ export function CapabilitiesPanel() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-bg-tertiary border-b border-border z-10">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs text-text-muted font-medium min-w-36">기능</th>
+                    <th className="text-left px-4 py-3 text-xs text-text-muted font-medium min-w-36">{t('capabilities.featureHeader')}</th>
                     {enabledAgents.map((agent) => (
                       <th
                         key={agent.type}
@@ -142,8 +142,8 @@ export function CapabilitiesPanel() {
                       }`}
                     >
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-text-primary">{feature.label}</p>
-                        <p className="text-xs text-text-muted">{feature.description}</p>
+                        <p className="text-sm font-medium text-text-primary">{t(`capabilities.features.${feature.key}.label`)}</p>
+                        <p className="text-xs text-text-muted">{t(`capabilities.features.${feature.key}.description`)}</p>
                       </td>
                       {enabledAgents.map((agent) => {
                         const supports = getAgentSupports(agent.paths);
@@ -163,7 +163,7 @@ export function CapabilitiesPanel() {
           {/* Disabled agents note */}
           {agents.some((a) => !a.enabled) && (
             <p className="text-xs text-text-muted shrink-0">
-              비활성화된 에이전트 {agents.filter((a) => !a.enabled).length}개는 표시에서 제외되었습니다.
+              {tf('capabilities.hiddenDisabledAgents', { count: agents.filter((a) => !a.enabled).length })}
             </p>
           )}
         </>

@@ -126,6 +126,7 @@ function AgentCard({
   const [draftPaths, setDraftPaths] = useState<AgentPaths>({ ...agent.paths });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const { t } = useI18n();
 
   const handleSave = async () => {
     setSaving(true);
@@ -159,20 +160,20 @@ function AgentCard({
             </span>
             {agent.builtIn ? (
               <span className="text-xs px-2 py-0.5 rounded-full bg-accent-blue/15 text-accent-blue">
-                Built-in
+                {t('common.builtIn')}
               </span>
             ) : (
               <span className="text-xs px-2 py-0.5 rounded-full bg-accent-purple/15 text-accent-purple">
-                Custom
+                {t('common.custom')}
               </span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
             <span
               className={`w-2 h-2 rounded-full ${agent.enabled ? 'bg-accent-green' : 'bg-text-muted'}`}
-              title={agent.enabled ? 'Enabled' : 'Disabled'}
+              title={agent.enabled ? t('common.enabled') : t('common.disabled')}
             />
-            <span className="text-xs text-text-muted">{agent.enabled ? 'Enabled' : 'Disabled'}</span>
+            <span className="text-xs text-text-muted">{agent.enabled ? t('common.enabled') : t('common.disabled')}</span>
           </div>
         </div>
 
@@ -187,7 +188,7 @@ function AgentCard({
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          Paths
+          {t('settings.paths')}
         </button>
       </div>
 
@@ -205,7 +206,7 @@ function AgentCard({
                     onChange={(e) =>
                       setDraftPaths((prev) => ({ ...prev, [key]: e.target.value || undefined }))
                     }
-                    placeholder={REQUIRED_PATH_KEYS.includes(key) ? 'required' : 'optional'}
+                    placeholder={REQUIRED_PATH_KEYS.includes(key) ? t('common.required') : t('common.optional')}
                     className="flex-1 text-xs font-mono bg-bg-primary border border-border focus:border-accent-purple rounded px-2 py-1 outline-none text-text-primary placeholder:text-text-muted"
                   />
                 ) : (
@@ -226,13 +227,13 @@ function AgentCard({
                   disabled={saving}
                   className="text-xs px-3 py-1.5 rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors disabled:opacity-40"
                 >
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? t('common.saving') : t('common.save')}
                 </button>
                 <button
                   onClick={handleCancelEdit}
                   className="text-xs px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </>
             ) : (
@@ -240,24 +241,24 @@ function AgentCard({
                 onClick={() => setEditing(true)}
                 className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-border-hover text-text-secondary hover:text-text-primary transition-colors"
               >
-                Edit paths
+                {t('settings.editPaths')}
               </button>
             )}
             {!agent.builtIn && !editing && (
               confirmDelete ? (
                 <>
-                  <span className="text-xs text-text-muted">Delete?</span>
+                  <span className="text-xs text-text-muted">{t('settings.deleteQuestion')}</span>
                   <button
                     onClick={() => onDelete(agent.type)}
                     className="text-xs px-3 py-1.5 rounded-lg bg-accent-red text-bg-primary hover:bg-accent-red/80 transition-colors"
                   >
-                    Confirm
+                    {t('common.confirm')}
                   </button>
                   <button
                     onClick={() => setConfirmDelete(false)}
                     className="text-xs px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary transition-colors"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </>
               ) : (
@@ -265,7 +266,7 @@ function AgentCard({
                   onClick={() => setConfirmDelete(true)}
                   className="text-xs px-3 py-1.5 rounded-lg border border-accent-red/30 text-accent-red hover:bg-accent-red/10 transition-colors ml-auto"
                 >
-                  Delete
+                  {t('common.delete')}
                 </button>
               )
             )}
@@ -278,6 +279,7 @@ function AgentCard({
 
 function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const addToast = useToast((s) => s.addToast);
+  const { t, tf } = useI18n();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     type: 'custom:',
@@ -303,7 +305,7 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const handleSubmit = async () => {
     if (!form.type || !form.displayName || !form.globalHome || !form.projectDir ||
         !form.globalInstruction || !form.projectInstruction) {
-      addToast('Fill in all required fields', 'error');
+      addToast(t('settings.fillRequiredFields'), 'error');
       return;
     }
     setSubmitting(true);
@@ -319,11 +321,11 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
         body: JSON.stringify({ type: form.type, displayName: form.displayName, icon: form.icon, paths }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      addToast('Agent type created', 'success');
+      addToast(t('settings.agentTypeCreated'), 'success');
       onCreated();
       onClose();
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Failed to create', 'error');
+      addToast(e instanceof Error ? e.message : t('common.error'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -334,7 +336,7 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
   return (
     <div className="bg-bg-secondary rounded-xl border border-accent-purple/30 p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-text-primary">Add Custom Agent Type</h3>
+        <h3 className="text-sm font-semibold text-text-primary">{t('settings.addCustomAgentType')}</h3>
         <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -344,21 +346,21 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-text-muted">Type <span className="text-accent-red">*</span></label>
+          <label className="text-xs text-text-muted">{t('settings.type')} <span className="text-accent-red">*</span></label>
           <input className={inputClass} value={form.type} onChange={(e) => set('type', e.target.value)} placeholder="custom:my-agent" />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-text-muted">Display Name <span className="text-accent-red">*</span></label>
+          <label className="text-xs text-text-muted">{t('settings.displayName')} <span className="text-accent-red">*</span></label>
           <input className={inputClass} value={form.displayName} onChange={(e) => set('displayName', e.target.value)} placeholder="My Agent" />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-text-muted">Icon</label>
+          <label className="text-xs text-text-muted">{t('settings.icon')}</label>
           <input className={inputClass} value={form.icon} onChange={(e) => set('icon', e.target.value)} placeholder="🤖" />
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium text-text-secondary">Required Paths</p>
+        <p className="text-xs font-medium text-text-secondary">{t('settings.requiredPaths')}</p>
         {REQUIRED_PATH_KEYS.map((k) => (
           <div key={k} className="flex items-center gap-2">
             <span className="text-xs text-text-muted font-mono w-36 shrink-0">{k} <span className="text-accent-red">*</span></span>
@@ -366,14 +368,14 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
               className={`${inputClass} flex-1`}
               value={(form as Record<string, string>)[k] ?? ''}
               onChange={(e) => set(k as string, e.target.value)}
-              placeholder={`Path for ${k}`}
+              placeholder={tf('settings.pathFor', { key: k })}
             />
           </div>
         ))}
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium text-text-secondary">Optional Paths</p>
+        <p className="text-xs font-medium text-text-secondary">{t('settings.optionalPaths')}</p>
         {OPTIONAL_PATH_KEYS.map((k) => (
           <div key={k} className="flex items-center gap-2">
             <span className="text-xs text-text-muted font-mono w-36 shrink-0">{k}</span>
@@ -381,7 +383,7 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
               className={`${inputClass} flex-1`}
               value={(form as Record<string, string>)[k] ?? ''}
               onChange={(e) => set(k as string, e.target.value)}
-              placeholder="optional"
+              placeholder={t('common.optional')}
             />
           </div>
         ))}
@@ -392,14 +394,14 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
           onClick={onClose}
           className="text-sm px-4 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary transition-colors"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           onClick={handleSubmit}
           disabled={submitting}
           className="text-sm px-4 py-1.5 rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors disabled:opacity-40"
         >
-          {submitting ? 'Creating…' : 'Create'}
+          {submitting ? t('common.loading') : t('common.create')}
         </button>
       </div>
     </div>
@@ -407,6 +409,7 @@ function AddAgentForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
 }
 
 function AgentTypesTab() {
+  const { t, tf } = useI18n();
   const { data, loading, error, reload } = useFetch<AgentConfig[]>('/api/agent-types');
   const addToast = useToast((s) => s.addToast);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -421,10 +424,10 @@ function AgentTypesTab() {
         body: JSON.stringify({ paths }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      addToast('Paths saved', 'success');
+      addToast(t('settings.pathsSaved'), 'success');
       reload();
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Save failed', 'error');
+      addToast(e instanceof Error ? e.message : t('settings.saveFailed'), 'error');
       throw e;
     }
   };
@@ -433,29 +436,29 @@ function AgentTypesTab() {
     try {
       const res = await fetch(`/api/agent-types/${encodeURIComponent(type)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      addToast('Agent type deleted', 'success');
+      addToast(t('settings.agentTypeDeleted'), 'success');
       reload();
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Delete failed', 'error');
+      addToast(e instanceof Error ? e.message : t('settings.deleteFailed'), 'error');
     }
   };
 
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-text-secondary">{agents.length} agent type{agents.length !== 1 ? 's' : ''} registered</p>
+        <p className="text-sm text-text-secondary">{tf('settings.agentTypesCount', { count: agents.length })}</p>
         <div className="flex items-center gap-2">
           <button
             onClick={reload}
             className="text-sm text-text-muted hover:text-text-primary transition-colors px-3 py-1.5 rounded-lg border border-border hover:border-border-hover"
           >
-            Refresh
+            {t('common.refresh')}
           </button>
           <button
             onClick={() => setShowAddForm((v) => !v)}
             className="text-sm px-3 py-1.5 rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors"
           >
-            + Add Custom Agent
+            + {t('settings.addCustomAgent')}
           </button>
         </div>
       </div>
@@ -467,7 +470,7 @@ function AgentTypesTab() {
       {loading && (
         <div className="flex items-center gap-2 text-text-muted">
           <div className="w-4 h-4 rounded-full border-2 border-accent-blue border-t-transparent animate-spin" />
-          <span className="text-sm">Loading…</span>
+          <span className="text-sm">{t('common.loading')}</span>
         </div>
       )}
 
@@ -479,7 +482,7 @@ function AgentTypesTab() {
 
       {!loading && !error && agents.length === 0 && (
         <div className="bg-bg-secondary rounded-xl border border-border p-8 flex flex-col items-center gap-2 text-center">
-          <p className="text-text-muted text-sm">No agent types found</p>
+          <p className="text-text-muted text-sm">{t('settings.noAgentTypes')}</p>
         </div>
       )}
 
@@ -497,6 +500,7 @@ function AgentTypesTab() {
 // ─── Sub-components: Projects ─────────────────────────────────────────────────
 
 function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: string) => Promise<void> }) {
+  const { t, tf } = useI18n();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -534,23 +538,23 @@ function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: s
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-text-muted">Added {formatDate(project.addedAt)}</span>
+        <span className="text-xs text-text-muted">{tf('settings.addedOn', { date: formatDate(project.addedAt) })}</span>
         <div className="flex items-center gap-2">
           {confirmDelete ? (
             <>
-              <span className="text-xs text-text-muted">Delete?</span>
+              <span className="text-xs text-text-muted">{t('settings.deleteQuestion')}</span>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="text-xs px-3 py-1 rounded-lg bg-accent-red text-bg-primary hover:bg-accent-red/80 transition-colors disabled:opacity-40"
               >
-                {deleting ? '…' : 'Confirm'}
+                {deleting ? '…' : t('common.confirm')}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 className="text-xs px-3 py-1 rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </>
           ) : (
@@ -558,7 +562,7 @@ function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: s
               onClick={() => setConfirmDelete(true)}
               className="text-xs px-3 py-1 rounded-lg border border-accent-red/30 text-accent-red hover:bg-accent-red/10 transition-colors"
             >
-              Delete
+              {t('common.delete')}
             </button>
           )}
         </div>
@@ -579,6 +583,7 @@ function RegisterProjectForm({
   onCreated: () => void;
 }) {
   const addToast = useToast((s) => s.addToast);
+  const { t, tf } = useI18n();
   const [submitting, setSubmitting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [form, setForm] = useState({
@@ -603,7 +608,7 @@ function RegisterProjectForm({
   const deriveBasename = (p: string) => p.split('/').filter(Boolean).pop() ?? '';
 
   const handleAnalyze = async () => {
-    if (!form.path) { addToast('Enter a path first', 'error'); return; }
+    if (!form.path) { addToast(t('settings.enterPathFirst'), 'error'); return; }
     setAnalyzing(true);
     try {
       const res = await fetch('/api/projects/analyze', {
@@ -618,9 +623,9 @@ function RegisterProjectForm({
         name: result.name || prev.name,
         selectedAgents: result.detectedAgents ?? prev.selectedAgents,
       }));
-      addToast(`Detected: ${result.framework ?? result.language ?? 'project'}`, 'info');
+      addToast(tf('settings.detected', { value: result.framework ?? result.language ?? t('common.project') }), 'info');
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Analysis failed', 'error');
+      addToast(e instanceof Error ? e.message : t('settings.analysisFailed'), 'error');
     } finally {
       setAnalyzing(false);
     }
@@ -635,7 +640,7 @@ function RegisterProjectForm({
     }));
 
   const handleSubmit = async () => {
-    if (!form.path || !form.name) { addToast('Path and name are required', 'error'); return; }
+    if (!form.path || !form.name) { addToast(t('settings.pathAndNameRequired'), 'error'); return; }
     setSubmitting(true);
     try {
       const res = await fetch('/api/projects', {
@@ -644,11 +649,11 @@ function RegisterProjectForm({
         body: JSON.stringify({ path: form.path, name: form.name, category: form.category, agents: form.selectedAgents }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      addToast('Project registered', 'success');
+      addToast(t('settings.projectRegistered'), 'success');
       onCreated();
       onClose();
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Failed to register', 'error');
+      addToast(e instanceof Error ? e.message : t('common.error'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -660,7 +665,7 @@ function RegisterProjectForm({
   return (
     <div className="bg-bg-secondary rounded-xl border border-accent-purple/30 p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-text-primary">Register Project</h3>
+        <h3 className="text-sm font-semibold text-text-primary">{t('settings.registerProject')}</h3>
         <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -669,7 +674,7 @@ function RegisterProjectForm({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-text-muted">Path <span className="text-accent-red">*</span></label>
+        <label className="text-xs text-text-muted">{t('settings.path')} <span className="text-accent-red">*</span></label>
         <div className="flex gap-2">
           <input
             className={`${inputClass} flex-1`}
@@ -682,14 +687,14 @@ function RegisterProjectForm({
             disabled={analyzing}
             className="text-sm px-3 py-1.5 rounded-lg border border-border hover:border-border-hover text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap disabled:opacity-40"
           >
-            {analyzing ? 'Analyzing…' : 'Analyze'}
+            {analyzing ? t('settings.analyzing') : t('settings.analyze')}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-text-muted">Name <span className="text-accent-red">*</span></label>
+          <label className="text-xs text-text-muted">{t('settings.name')} <span className="text-accent-red">*</span></label>
           <input
             className={inputClass}
             value={form.name}
@@ -698,7 +703,7 @@ function RegisterProjectForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-text-muted">Category</label>
+          <label className="text-xs text-text-muted">{t('settings.category')}</label>
           <select
             className={inputClass}
             value={form.category}
@@ -713,7 +718,7 @@ function RegisterProjectForm({
 
       {enabledAgents.length > 0 && (
         <div className="flex flex-col gap-2">
-          <label className="text-xs text-text-muted">Agents</label>
+          <label className="text-xs text-text-muted">{t('settings.agents')}</label>
           <div className="flex flex-wrap gap-2">
             {enabledAgents.map((a) => (
               <label key={a.type} className="flex items-center gap-1.5 cursor-pointer">
@@ -737,14 +742,14 @@ function RegisterProjectForm({
           onClick={onClose}
           className="text-sm px-4 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary transition-colors"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           onClick={handleSubmit}
           disabled={submitting}
           className="text-sm px-4 py-1.5 rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors disabled:opacity-40"
         >
-          {submitting ? 'Registering…' : 'Register'}
+          {submitting ? t('common.loading') : t('common.register')}
         </button>
       </div>
     </div>
@@ -752,6 +757,7 @@ function RegisterProjectForm({
 }
 
 function ProjectsTab() {
+  const { t, tf } = useI18n();
   const { data, loading, error, reload } = useFetch<ProjectsData>('/api/projects');
   const agentsFetch = useFetch<AgentConfig[]>('/api/agent-types');
   const addToast = useToast((s) => s.addToast);
@@ -765,10 +771,10 @@ function ProjectsTab() {
     try {
       const res = await fetch(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      addToast('Project removed', 'success');
+      addToast(t('settings.projectRemoved'), 'success');
       reload();
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Delete failed', 'error');
+      addToast(e instanceof Error ? e.message : t('settings.deleteFailed'), 'error');
       throw e;
     }
   };
@@ -776,19 +782,19 @@ function ProjectsTab() {
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-text-secondary">{projects.length} project{projects.length !== 1 ? 's' : ''} registered</p>
+        <p className="text-sm text-text-secondary">{tf('settings.projectsCount', { count: projects.length })}</p>
         <div className="flex items-center gap-2">
           <button
             onClick={reload}
             className="text-sm text-text-muted hover:text-text-primary transition-colors px-3 py-1.5 rounded-lg border border-border hover:border-border-hover"
           >
-            Refresh
+            {t('common.refresh')}
           </button>
           <button
             onClick={() => setShowForm((v) => !v)}
             className="text-sm px-3 py-1.5 rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors"
           >
-            + Register Project
+            + {t('settings.registerProject')}
           </button>
         </div>
       </div>
@@ -805,7 +811,7 @@ function ProjectsTab() {
       {loading && (
         <div className="flex items-center gap-2 text-text-muted">
           <div className="w-4 h-4 rounded-full border-2 border-accent-blue border-t-transparent animate-spin" />
-          <span className="text-sm">Loading…</span>
+          <span className="text-sm">{t('common.loading')}</span>
         </div>
       )}
 
@@ -821,12 +827,12 @@ function ProjectsTab() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
-          <p className="text-text-muted text-sm">No projects registered yet</p>
+          <p className="text-text-muted text-sm">{t('settings.noProjectsYet')}</p>
           <button
             onClick={() => setShowForm(true)}
             className="text-sm px-4 py-1.5 rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors"
           >
-            Register your first project
+            {t('settings.registerFirstProject')}
           </button>
         </div>
       )}
@@ -845,11 +851,12 @@ function ProjectsTab() {
 // ─── Settings tab (dual-section: Global + Project) ──────────────────────────
 
 function ScopeBadge({ scope }: { scope: 'global' | 'project' }) {
+  const { t } = useI18n();
   const colors = {
     global: 'bg-accent-purple/15 text-accent-purple border-accent-purple/20',
     project: 'bg-accent-green/15 text-accent-green border-accent-green/20',
   };
-  const labels = { global: 'Global', project: 'Project' };
+  const labels = { global: t('common.global'), project: t('common.project') };
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${colors[scope]}`}>
       {labels[scope]}
@@ -864,17 +871,9 @@ function SettingsEditor({
   apiUrl: string | null;
   agent: string;
 }) {
+  const { t } = useI18n();
   const { data, loading, error, reload } = useFetch<SettingsData>(apiUrl);
-
-  if (apiUrl === null) {
-    return (
-      <div className="flex items-center justify-center py-6">
-        <p className="text-text-muted text-sm">프로젝트를 선택하세요</p>
-      </div>
-    );
-  }
   const addToast = useToast((s) => s.addToast);
-
   const [rawContent, setRawContent] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -902,7 +901,7 @@ function SettingsEditor({
   );
 
   const handleSave = async () => {
-    if (validationError) return;
+    if (validationError || !apiUrl) return;
     setSaving(true);
     try {
       const res = await fetch(apiUrl, {
@@ -911,15 +910,23 @@ function SettingsEditor({
         body: JSON.stringify({ raw: rawContent }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      addToast('Auto-backup created', 'success');
+      addToast(t('settings.autoBackupCreated'), 'success');
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Save failed', 'error');
+      addToast(e instanceof Error ? e.message : t('settings.saveFailed'), 'error');
     } finally {
       setSaving(false);
     }
   };
 
   const unsupported = !loading && !error && !data;
+
+  if (apiUrl === null) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <p className="text-text-muted text-sm">{t('common.selectProject')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-0">
@@ -944,14 +951,14 @@ function SettingsEditor({
             onClick={reload}
             className="px-3 py-1.5 text-sm rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
           >
-            Refresh
+            {t('common.refresh')}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !!validationError || !data}
             className="px-3 py-1.5 text-sm rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? t('common.saving') : t('common.save')}
           </button>
         </div>
       </div>
@@ -970,7 +977,7 @@ function SettingsEditor({
 
       {unsupported && (
         <div className="flex items-center justify-center py-8">
-          <p className="text-text-muted text-sm">This agent does not support a settings file</p>
+          <p className="text-text-muted text-sm">{t('settings.settingsFileUnsupported')}</p>
         </div>
       )}
 
@@ -1021,7 +1028,7 @@ function SettingsTab() {
           </div>
 
           {!agent.paths.settings ? (
-            <p className="text-xs text-text-muted px-1">설정 파일을 지원하지 않습니다</p>
+            <p className="text-xs text-text-muted px-1">{t('settings.settingsFileUnsupported')}</p>
           ) : (
             <div className="flex flex-col gap-4">
               {!projectOnly && (
@@ -1056,29 +1063,29 @@ function SettingsTab() {
 
 // ─── Guide sub-tab ───────────────────────────────────────────────────────────
 
-const GETTING_STARTED_STEPS: { agent: string; file: string; description: string; color: string }[] = [
+const GETTING_STARTED_STEPS: { agent: string; file: string; descriptionKey: string; color: string }[] = [
   {
     agent: 'Claude',
     file: 'CLAUDE.md',
-    description: '프로젝트 루트 또는 홈 디렉토리에 CLAUDE.md 파일을 생성하세요. Claude Code가 세션 시작 시 자동으로 읽습니다.',
+    descriptionKey: 'settings.gettingStarted.claude',
     color: 'accent-purple',
   },
   {
     agent: 'Codex',
     file: 'AGENTS.md',
-    description: '프로젝트 루트에 AGENTS.md 파일을 생성하세요. OpenAI Codex CLI가 에이전트 동작 지침으로 사용합니다.',
+    descriptionKey: 'settings.gettingStarted.codex',
     color: 'accent-green',
   },
   {
     agent: 'Copilot',
     file: '.github/copilot-instructions.md',
-    description: '.github 디렉토리에 copilot-instructions.md 파일을 생성하세요. GitHub Copilot이 코드 제안 시 참조합니다.',
+    descriptionKey: 'settings.gettingStarted.copilot',
     color: 'accent-blue',
   },
   {
     agent: 'OpenCode',
     file: 'OPENCODE.md',
-    description: '프로젝트 루트에 OPENCODE.md 파일을 생성하세요. OpenCode가 세션마다 컨텍스트로 로드합니다.',
+    descriptionKey: 'settings.gettingStarted.opencode',
     color: 'accent-yellow',
   },
 ];
@@ -1086,33 +1093,33 @@ const GETTING_STARTED_STEPS: { agent: string; file: string; description: string;
 const QUICK_TIPS = [
   {
     icon: '📌',
-    title: '명확한 역할 정의',
-    description: '에이전트의 역할, 목적, 제약 사항을 파일 상단에 명확히 기술하세요.',
+    titleKey: 'settings.tips.clearRoleTitle',
+    descriptionKey: 'settings.tips.clearRoleDescription',
   },
   {
     icon: '📁',
-    title: '프로젝트 구조 설명',
-    description: '디렉토리 구조, 주요 파일, 코드 컨벤션을 포함시키면 더 정확한 응답을 받을 수 있습니다.',
+    titleKey: 'settings.tips.projectStructureTitle',
+    descriptionKey: 'settings.tips.projectStructureDescription',
   },
   {
     icon: '🚫',
-    title: '금지 사항 명시',
-    description: '절대로 하지 말아야 할 행동(예: 프로덕션 배포, 민감 데이터 노출 등)을 명시하세요.',
+    titleKey: 'settings.tips.prohibitionsTitle',
+    descriptionKey: 'settings.tips.prohibitionsDescription',
   },
   {
     icon: '🔄',
-    title: '지속적인 업데이트',
-    description: '프로젝트가 변경될 때마다 지침 파일도 함께 업데이트하세요.',
+    titleKey: 'settings.tips.updatesTitle',
+    descriptionKey: 'settings.tips.updatesDescription',
   },
   {
     icon: '🌐',
-    title: '언어 지정',
-    description: '응답 언어를 명시적으로 지정하면 일관된 커뮤니케이션이 가능합니다.',
+    titleKey: 'settings.tips.languageTitle',
+    descriptionKey: 'settings.tips.languageDescription',
   },
   {
     icon: '⚡',
-    title: '간결함 유지',
-    description: '지나치게 긴 지침은 오히려 효과가 낮습니다. 핵심만 간결하게 작성하세요.',
+    titleKey: 'settings.tips.conciseTitle',
+    descriptionKey: 'settings.tips.conciseDescription',
   },
 ];
 
@@ -1128,16 +1135,17 @@ function GuideSectionCard({ title, children }: { title: string; children: ReactN
 }
 
 function GuideTab() {
+  const { t } = useI18n();
   return (
     <div className="p-4 flex flex-col gap-5">
       <div className="flex items-center gap-2">
         <span className="px-2 py-0.5 rounded-full bg-accent-purple/15 text-accent-purple text-xs">
-          시작 가이드
+          {t('settings.guideBadge')}
         </span>
       </div>
 
       {/* Section 1: Getting Started */}
-      <GuideSectionCard title="1. Getting Started — 에이전트별 지침 파일 설정">
+      <GuideSectionCard title={t('settings.gettingStartedTitle')}>
         <div className="flex flex-col gap-4">
           {GETTING_STARTED_STEPS.map((step) => (
             <div key={step.agent} className="flex gap-4">
@@ -1148,7 +1156,7 @@ function GuideTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono text-text-primary mb-1">{step.file}</p>
-                <p className="text-xs text-text-secondary leading-relaxed">{step.description}</p>
+                <p className="text-xs text-text-secondary leading-relaxed">{t(step.descriptionKey)}</p>
               </div>
             </div>
           ))}
@@ -1156,17 +1164,17 @@ function GuideTab() {
       </GuideSectionCard>
 
       {/* Section 2: Quick Tips */}
-      <GuideSectionCard title="2. Quick Tips — 지침 파일 작성 모범 사례">
+      <GuideSectionCard title={t('settings.quickTipsTitle')}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {QUICK_TIPS.map((tip) => (
             <div
-              key={tip.title}
+              key={tip.titleKey}
               className="flex gap-3 p-3 rounded-lg bg-bg-tertiary border border-border hover:border-border-hover transition-colors"
             >
               <span className="text-xl shrink-0">{tip.icon}</span>
               <div>
-                <p className="text-sm font-medium text-text-primary mb-0.5">{tip.title}</p>
-                <p className="text-xs text-text-secondary leading-relaxed">{tip.description}</p>
+                <p className="text-sm font-medium text-text-primary mb-0.5">{t(tip.titleKey)}</p>
+                <p className="text-xs text-text-secondary leading-relaxed">{t(tip.descriptionKey)}</p>
               </div>
             </div>
           ))}
@@ -1180,13 +1188,7 @@ function GuideTab() {
 
 type SubTab = 'settings' | 'agent-types' | 'projects' | 'guide' | 'capabilities';
 
-const SUB_TABS: { id: SubTab; label: string }[] = [
-  { id: 'settings', label: 'Agent Settings' },
-  { id: 'agent-types', label: 'Agent Types' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'capabilities', label: 'Capabilities' },
-  { id: 'guide', label: 'Guide' },
-];
+const SUB_TABS: SubTab[] = ['settings', 'agent-types', 'projects', 'capabilities', 'guide'];
 
 export function SettingsPanel() {
   const [activeTab, setActiveTab] = useState<SubTab>('settings');
@@ -1203,15 +1205,15 @@ export function SettingsPanel() {
       <div className="flex items-center gap-1 px-4 pt-3 pb-0 border-b border-border shrink-0">
         {SUB_TABS.map((tab) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
             className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
-              activeTab === tab.id
+              activeTab === tab
                 ? 'border-accent-purple text-accent-purple'
                 : 'border-transparent text-text-muted hover:text-text-secondary'
             }`}
           >
-            {tab.label}
+            {t(`settings.subTabs.${tab === 'agent-types' ? 'agentTypes' : tab}`)}
           </button>
         ))}
       </div>
