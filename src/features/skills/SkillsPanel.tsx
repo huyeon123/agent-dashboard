@@ -4,10 +4,11 @@ import { useFetch } from '../../hooks/use-fetch';
 import { useToast } from '../../hooks/use-toast';
 import { useI18n } from '../../i18n';
 import { useScope } from '../../hooks/use-scope';
+import { useUiStore } from '../../store/ui-store';
 import type { Skill, SkillSource, CreateSkillInput } from '../../types/skills';
 
 const SOURCE_BADGE: Record<SkillSource, { label: string; color: string }> = {
-  user: { label: 'User', color: 'text-accent-purple bg-accent-purple/10 border-accent-purple/20' },
+  user: { label: 'Global', color: 'text-accent-purple bg-accent-purple/10 border-accent-purple/20' },
   plugin: { label: 'Plugin', color: 'text-accent-blue bg-accent-blue/10 border-accent-blue/20' },
   project: { label: 'Project', color: 'text-accent-green bg-accent-green/10 border-accent-green/20' },
 };
@@ -16,6 +17,19 @@ function SourceBadge({ source }: { source: SkillSource }) {
   const { label, color } = SOURCE_BADGE[source] ?? SOURCE_BADGE.user;
   return (
     <span className={`text-xs px-2 py-0.5 rounded border font-medium ${color}`}>{label}</span>
+  );
+}
+
+function ScopeBadge({ scope }: { scope: 'global' | 'project' }) {
+  const colors = {
+    global: 'bg-accent-purple/15 text-accent-purple border-accent-purple/20',
+    project: 'bg-accent-green/15 text-accent-green border-accent-green/20',
+  };
+  const labels = { global: 'Global', project: 'Project' };
+  return (
+    <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${colors[scope]}`}>
+      {labels[scope]}
+    </span>
   );
 }
 
@@ -185,35 +199,73 @@ function CreateSkillDialog({
   );
 }
 
-export function SkillsPanel() {
-  const { t } = useI18n();
-  const currentAgent = useAgentStore((s) => s.currentAgent);
-  const addToast = useToast((s) => s.addToast);
-  const [showCreate, setShowCreate] = useState(false);
-  const { scope, projectPath, projects } = useScope();
-
-  const apiUrl = scope === 'project' && projectPath
-    ? `/api/skills?agent=${currentAgent}&scope=project&path=${encodeURIComponent(projectPath)}`
-    : `/api/skills?agent=${currentAgent}`;
-
-  const { data: skills, loading, error, reload } = useFetch<Skill[]>(apiUrl);
-
-  async function handleDelete(id: string) {
-    try {
-      const res = await fetch(`/api/skills/${id}?agent=${currentAgent}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      addToast(t('skills.deleted'), 'success');
-      reload();
-    } catch (err) {
-      addToast(String(err), 'error');
-    }
+function SkillsList({
+  skills,
+  onDelete,
+  t,
+}: {
+  skills: Skill[];
+  onDelete: (id: string) => void;
+  t: (k: string) => string;
+}) {
+  if (skills.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-text-muted text-sm">{t('common.noData')}</p>
+      </div>
+    );
   }
+
+  const grouped: Record<SkillSource, Skill[]> = { user: [], plugin: [], project: [] };
+  for (const skill of skills) {
+    const src = skill.source in grouped ? skill.source : 'user';
+    grouped[src].push(skill);
+  }
+
+  const groupOrder: SkillSource[] = ['user', 'plugin', 'project'];
+  const groupLabels: Record<SkillSource, string> = {
+    user: t('common.user'),
+    plugin: t('common.plugin'),
+    project: t('common.project'),
+  };
+
+  return (
+    <div className="space-y-6">
+      {groupOrder.map((source) => {
+        const group = grouped[source];
+        if (group.length === 0) return null;
+        return (
+          <div key={source}>
+            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+              {groupLabels[source]} ({group.length})
+            </h3>
+            <div className="space-y-2">
+              {group.map((skill) => (
+                <SkillCard key={skill.id} skill={skill} onDelete={onDelete} t={t} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SkillsSection({
+  apiUrl,
+  onDelete,
+  t,
+}: {
+  apiUrl: string;
+  onDelete: (id: string) => void;
+  t: (k: string) => string;
+}) {
+  const { data, loading, error } = useFetch<Skill[]>(apiUrl);
 
   if (loading) {
     return (
       <div className="space-y-3 animate-pulse">
-        <div className="h-8 bg-bg-tertiary rounded w-1/3" />
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="h-14 bg-bg-tertiary rounded-lg border border-border" />
         ))}
       </div>
@@ -231,72 +283,78 @@ export function SkillsPanel() {
     return <div className="text-accent-red text-sm">{t('common.error')}: {error}</div>;
   }
 
-  const grouped: Record<SkillSource, Skill[]> = { user: [], plugin: [], project: [] };
-  for (const skill of skills ?? []) {
-    const src = skill.source in grouped ? skill.source : 'user';
-    grouped[src].push(skill);
-  }
+  return <SkillsList skills={data ?? []} onDelete={onDelete} t={t} />;
+}
 
-  const groupOrder: SkillSource[] = ['user', 'plugin', 'project'];
-  const groupLabels: Record<SkillSource, string> = {
-    user: t('common.user'),
-    plugin: t('common.plugin'),
-    project: t('common.project'),
-  };
+export function SkillsPanel() {
+  const { t } = useI18n();
+  const currentAgent = useAgentStore((s) => s.currentAgent);
+  const addToast = useToast((s) => s.addToast);
+  const [showCreate, setShowCreate] = useState(false);
+  const { projectPath, projects } = useScope();
+  const projectOnly = useUiStore((s) => s.projectOnly);
+
+  const globalApiUrl = `/api/skills?agent=${currentAgent}`;
+  const projectApiUrl = projectPath
+    ? `/api/skills?agent=${currentAgent}&scope=project&path=${encodeURIComponent(projectPath)}`
+    : null;
+
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/skills/${id}?agent=${currentAgent}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      addToast(t('skills.deleted'), 'success');
+    } catch (err) {
+      addToast(String(err), 'error');
+    }
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-text-primary">{t('skills.title')}</h2>
-        <button
-          className="px-4 py-1.5 bg-accent-purple text-white rounded-lg text-sm hover:opacity-80 transition-opacity"
-          onClick={() => setShowCreate(true)}
-        >
-          + {t('skills.createNew')}
-        </button>
+        {!projectOnly && (
+          <button
+            className="px-4 py-1.5 bg-accent-purple text-white rounded-lg text-sm hover:opacity-80 transition-opacity"
+            onClick={() => setShowCreate(true)}
+          >
+            + {t('skills.createNew')}
+          </button>
+        )}
       </div>
 
-      {scope === 'project' && projects.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <p className="text-text-muted text-sm">{t('common.registerProjects')}</p>
-        </div>
+      {!projectOnly && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ScopeBadge scope="global" />
+          </div>
+          <SkillsSection apiUrl={globalApiUrl} onDelete={handleDelete} t={t} />
+        </section>
       )}
 
-      {(scope === 'global' || projectPath) && (
-        <>
-          {(!skills || skills.length === 0) ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <p className="text-text-muted text-sm">{t('common.noData')}</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {groupOrder.map((source) => {
-                const group = grouped[source];
-                if (group.length === 0) return null;
-                return (
-                  <div key={source}>
-                    <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-                      {groupLabels[source]} ({group.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {group.map((skill) => (
-                        <SkillCard key={skill.id} skill={skill} onDelete={handleDelete} t={t} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <ScopeBadge scope="project" />
+        </div>
+        {projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <p className="text-text-muted text-sm">{t('common.registerProjects')}</p>
+          </div>
+        ) : projectApiUrl ? (
+          <SkillsSection apiUrl={projectApiUrl} onDelete={handleDelete} t={t} />
+        ) : (
+          <div className="bg-bg-secondary rounded-xl border border-border p-8 text-center">
+            <p className="text-text-muted text-sm">{t('common.noData')}</p>
+          </div>
+        )}
+      </section>
 
       {showCreate && (
         <CreateSkillDialog
           agent={currentAgent}
-          defaultScope={scope}
+          defaultScope="global"
           onClose={() => setShowCreate(false)}
-          onCreated={reload}
+          onCreated={() => {/* sections will re-fetch via useFetch */}}
           t={t}
         />
       )}

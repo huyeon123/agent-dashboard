@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useFetch } from '../../hooks/use-fetch';
-import { useAgentStore } from '../../store/agent-store';
 import { useToast } from '../../hooks/use-toast';
 import { useI18n } from '../../i18n';
 import { useScope } from '../../hooks/use-scope';
+import { useUiStore } from '../../store/ui-store';
+import { CapabilitiesPanel } from '../capabilities/CapabilitiesPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,7 +121,7 @@ function AgentCard({
   onSave: (type: string, paths: AgentPaths) => Promise<void>;
   onDelete: (type: string) => Promise<void>;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draftPaths, setDraftPaths] = useState<AgentPaths>({ ...agent.paths });
   const [saving, setSaving] = useState(false);
@@ -841,22 +842,37 @@ function ProjectsTab() {
   );
 }
 
-// ─── Settings tab (existing) ──────────────────────────────────────────────────
+// ─── Settings tab (dual-section: Global + Project) ──────────────────────────
 
-function SettingsTab() {
-  const { currentAgent } = useAgentStore();
-  const { t } = useI18n();
-  const { scope, projectPath, projects } = useScope();
-  const { data: agentTypes } = useFetch<AgentConfig[]>('/api/agent-types');
+function ScopeBadge({ scope }: { scope: 'global' | 'project' }) {
+  const colors = {
+    global: 'bg-accent-purple/15 text-accent-purple border-accent-purple/20',
+    project: 'bg-accent-green/15 text-accent-green border-accent-green/20',
+  };
+  const labels = { global: 'Global', project: 'Project' };
+  return (
+    <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${colors[scope]}`}>
+      {labels[scope]}
+    </span>
+  );
+}
 
-  const agentSupportsSettings = agentTypes?.find((a) => a.type === currentAgent)?.paths.settings;
-
-  const apiUrl = !agentSupportsSettings ? null
-    : scope === 'project' && projectPath
-    ? `/api/settings?agent=${currentAgent}&scope=project&path=${encodeURIComponent(projectPath)}`
-    : currentAgent ? `/api/settings?agent=${currentAgent}` : null;
-
+function SettingsEditor({
+  apiUrl,
+  agent,
+}: {
+  apiUrl: string | null;
+  agent: string;
+}) {
   const { data, loading, error, reload } = useFetch<SettingsData>(apiUrl);
+
+  if (apiUrl === null) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <p className="text-text-muted text-sm">프로젝트를 선택하세요</p>
+      </div>
+    );
+  }
   const addToast = useToast((s) => s.addToast);
 
   const [rawContent, setRawContent] = useState('');
@@ -872,7 +888,7 @@ function SettingsTab() {
 
   useEffect(() => {
     reload();
-  }, [currentAgent, reload]);
+  }, [agent, reload]);
 
   const handleChange = useCallback(
     (value: string) => {
@@ -885,15 +901,11 @@ function SettingsTab() {
     [data]
   );
 
-  const saveUrl = scope === 'project' && projectPath
-    ? `/api/settings?agent=${currentAgent}&scope=project&path=${encodeURIComponent(projectPath)}`
-    : `/api/settings?agent=${currentAgent}`;
-
   const handleSave = async () => {
     if (validationError) return;
     setSaving(true);
     try {
-      const res = await fetch(saveUrl, {
+      const res = await fetch(apiUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ raw: rawContent }),
@@ -910,85 +922,134 @@ function SettingsTab() {
   const unsupported = !loading && !error && !data;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      {scope === 'project' && projects.length === 0 && (
-        <div className="flex flex-col items-center justify-center flex-1 gap-2">
-          <p className="text-text-muted text-sm">{t('common.registerProjects')}</p>
+    <div className="flex flex-col min-h-0">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
+        <div className="flex items-center gap-2">
+          {data && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-mono font-medium ${
+                FORMAT_COLORS[data.format] ?? 'bg-bg-tertiary text-text-muted'
+              }`}
+            >
+              {data.format.toUpperCase()}
+            </span>
+          )}
+          {data && (
+            <span className="text-xs text-text-muted font-mono truncate max-w-xs">{data.filePath}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={reload}
+            className="px-3 py-1.5 text-sm rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+          >
+            Refresh
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !!validationError || !data}
+            className="px-3 py-1.5 text-sm rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
-      {(scope === 'global' || projectPath) && (
-        <>
-          {/* Toolbar */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
-            <div className="flex items-center gap-2">
-              {data && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-mono font-medium ${
-                    FORMAT_COLORS[data.format] ?? 'bg-bg-tertiary text-text-muted'
-                  }`}
-                >
-                  {data.format.toUpperCase()}
-                </span>
-              )}
-              {data && (
-                <span className="text-xs text-text-muted font-mono truncate max-w-xs">{data.filePath}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={reload}
-                className="px-3 py-1.5 text-sm rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-              >
-                Refresh
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !!validationError || !data}
-                className="px-3 py-1.5 text-sm rounded-lg bg-accent-purple text-bg-primary hover:bg-accent-purple/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
+      {error && !loading && (
+        <div className="m-4 rounded-lg bg-bg-secondary border border-accent-red/30 p-4 text-accent-red text-sm">
+          {error}
+        </div>
+      )}
+
+      {unsupported && (
+        <div className="flex items-center justify-center py-8">
+          <p className="text-text-muted text-sm">This agent does not support a settings file</p>
+        </div>
+      )}
+
+      {!loading && data && (
+        <div className="flex flex-col min-h-0 p-4 gap-2">
+          <textarea
+            value={rawContent}
+            onChange={(e) => handleChange(e.target.value)}
+            spellCheck={false}
+            className={`w-full resize-none font-mono text-sm bg-bg-secondary text-text-primary rounded-xl p-4 outline-none transition-colors border min-h-[300px] ${
+              validationError
+                ? 'border-accent-red focus:border-accent-red'
+                : 'border-border focus:border-accent-purple'
+            }`}
+          />
+          {validationError && (
+            <p className="text-accent-red text-xs font-mono px-1">{validationError}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { t } = useI18n();
+  const { data: agentTypes, loading } = useFetch<AgentConfig[]>('/api/agent-types');
+  const projectOnly = useUiStore((s) => s.projectOnly);
+  const { projectPath, projects } = useScope();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-6 h-6 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6 p-4">
+      {(agentTypes ?? []).map((agent) => (
+        <div key={agent.type} className="flex flex-col gap-3">
+          {/* Agent header */}
+          <div className="flex items-center gap-2 pb-1 border-b border-border">
+            {agent.icon && <span className="text-base">{agent.icon}</span>}
+            <span className="font-semibold text-text-primary text-sm">{agent.displayName}</span>
+            <span className="text-xs font-mono text-text-muted bg-bg-tertiary px-1.5 py-0.5 rounded">{agent.type}</span>
           </div>
 
-          {loading && (
-            <div className="flex items-center justify-center flex-1">
-              <div className="w-6 h-6 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-
-          {error && !loading && (
-            <div className="m-4 rounded-lg bg-bg-secondary border border-accent-red/30 p-4 text-accent-red text-sm">
-              {error}
-            </div>
-          )}
-
-          {unsupported && (
-            <div className="flex items-center justify-center flex-1">
-              <p className="text-text-muted text-sm">This agent does not support a settings file</p>
-            </div>
-          )}
-
-          {!loading && data && (
-            <div className="flex flex-col flex-1 min-h-0 p-4 gap-2">
-              <textarea
-                value={rawContent}
-                onChange={(e) => handleChange(e.target.value)}
-                spellCheck={false}
-                className={`flex-1 w-full resize-none font-mono text-sm bg-bg-secondary text-text-primary rounded-xl p-4 outline-none transition-colors border min-h-[400px] ${
-                  validationError
-                    ? 'border-accent-red focus:border-accent-red'
-                    : 'border-border focus:border-accent-purple'
-                }`}
-              />
-              {validationError && (
-                <p className="text-accent-red text-xs font-mono px-1">{validationError}</p>
+          {!agent.paths.settings ? (
+            <p className="text-xs text-text-muted px-1">설정 파일을 지원하지 않습니다</p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {!projectOnly && (
+                <div>
+                  <ScopeBadge scope="global" />
+                  <SettingsEditor
+                    apiUrl={`/api/settings?agent=${agent.type}`}
+                    agent={agent.type}
+                  />
+                </div>
               )}
+              <div>
+                <ScopeBadge scope="project" />
+                {projects.length === 0 ? (
+                  <div className="flex items-center justify-center py-6">
+                    <p className="text-text-muted text-sm">{t('common.registerProjects')}</p>
+                  </div>
+                ) : (
+                  <SettingsEditor
+                    apiUrl={projectPath ? `/api/settings?agent=${agent.type}&scope=project&path=${encodeURIComponent(projectPath)}` : null}
+                    agent={agent.type}
+                  />
+                )}
+              </div>
             </div>
           )}
-        </>
-      )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -1055,16 +1116,6 @@ const QUICK_TIPS = [
   },
 ];
 
-const COMPARISON_ROWS: { feature: string; claude: string; codex: string; copilot: string; opencode: string }[] = [
-  { feature: '지침 파일', claude: 'CLAUDE.md', codex: 'AGENTS.md', copilot: 'copilot-instructions.md', opencode: 'OPENCODE.md' },
-  { feature: '설정 파일', claude: 'settings.json', codex: '미지원', copilot: '미지원', opencode: 'config.json' },
-  { feature: '훅 시스템', claude: '지원', codex: '미지원', copilot: '미지원', opencode: '미지원' },
-  { feature: 'MCP 서버', claude: '지원', codex: '지원', copilot: '미지원', opencode: '지원' },
-  { feature: '스킬/명령', claude: '지원', codex: '미지원', copilot: '미지원', opencode: '미지원' },
-  { feature: '플러그인', claude: '지원', codex: '미지원', copilot: '제한적', opencode: '미지원' },
-  { feature: '멀티 에이전트', claude: '지원', codex: '미지원', copilot: '미지원', opencode: '미지원' },
-];
-
 function GuideSectionCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="rounded-xl bg-bg-secondary border border-border overflow-hidden">
@@ -1121,56 +1172,19 @@ function GuideTab() {
           ))}
         </div>
       </GuideSectionCard>
-
-      {/* Section 3: Agent Comparison */}
-      <GuideSectionCard title="3. Agent Comparison — 에이전트 기능 비교">
-        <div className="overflow-x-auto -mx-1">
-          <table className="w-full text-sm min-w-[520px]">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2 px-3 text-text-muted font-medium text-xs w-32">기능</th>
-                <th className="text-center py-2 px-3 text-accent-purple font-medium text-xs">Claude</th>
-                <th className="text-center py-2 px-3 text-accent-green font-medium text-xs">Codex</th>
-                <th className="text-center py-2 px-3 text-accent-blue font-medium text-xs">Copilot</th>
-                <th className="text-center py-2 px-3 text-accent-yellow font-medium text-xs">OpenCode</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMPARISON_ROWS.map((row, i) => (
-                <tr
-                  key={row.feature}
-                  className={`border-b border-border last:border-0 ${i % 2 === 0 ? 'bg-bg-primary/30' : ''}`}
-                >
-                  <td className="py-2 px-3 text-text-secondary text-xs font-medium">{row.feature}</td>
-                  {[row.claude, row.codex, row.copilot, row.opencode].map((val, idx) => (
-                    <td key={idx} className="py-2 px-3 text-center">
-                      {val === '지원' ? (
-                        <span className="inline-block w-5 h-5 rounded-full bg-accent-green/15 text-accent-green text-xs leading-5">✓</span>
-                      ) : val === '미지원' ? (
-                        <span className="text-text-muted text-xs">—</span>
-                      ) : (
-                        <span className="text-text-secondary text-xs font-mono">{val}</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </GuideSectionCard>
     </div>
   );
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
-type SubTab = 'settings' | 'agent-types' | 'projects' | 'guide';
+type SubTab = 'settings' | 'agent-types' | 'projects' | 'guide' | 'capabilities';
 
 const SUB_TABS: { id: SubTab; label: string }[] = [
-  { id: 'settings', label: 'Settings' },
+  { id: 'settings', label: 'Agent Settings' },
   { id: 'agent-types', label: 'Agent Types' },
   { id: 'projects', label: 'Projects' },
+  { id: 'capabilities', label: 'Capabilities' },
   { id: 'guide', label: 'Guide' },
 ];
 
@@ -1208,6 +1222,7 @@ export function SettingsPanel() {
         {activeTab === 'agent-types' && <AgentTypesTab />}
         {activeTab === 'projects' && <ProjectsTab />}
         {activeTab === 'guide' && <GuideTab />}
+        {activeTab === 'capabilities' && <CapabilitiesPanel />}
       </div>
     </div>
   );

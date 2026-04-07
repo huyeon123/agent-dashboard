@@ -2,6 +2,7 @@ import { useAgentStore } from '../../store/agent-store';
 import { useFetch } from '../../hooks/use-fetch';
 import { useI18n } from '../../i18n';
 import { useScope } from '../../hooks/use-scope';
+import { useUiStore } from '../../store/ui-store';
 
 interface McpServer {
   name: string;
@@ -45,76 +46,111 @@ function ServerCard({ server }: { server: McpServer }) {
   );
 }
 
+function ScopeBadge({ scope }: { scope: 'global' | 'project' | 'local' }) {
+  const colors = {
+    global: 'bg-accent-purple/15 text-accent-purple border-accent-purple/20',
+    project: 'bg-accent-green/15 text-accent-green border-accent-green/20',
+    local: 'bg-accent-blue/15 text-accent-blue border-accent-blue/20',
+  };
+  const labels = { global: 'Global', project: 'Project', local: 'Local' };
+  return (
+    <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${colors[scope]}`}>
+      {labels[scope]}
+    </span>
+  );
+}
+
+function ConnectorsSection({
+  apiUrl,
+  t,
+}: {
+  apiUrl: string;
+  t: (k: string) => string;
+}) {
+  const { data, loading, error } = useFetch<ConnectorsResponse>(apiUrl);
+  const servers = data?.mcpServers ?? [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-text-muted">
+        <div className="w-4 h-4 rounded-full border-2 border-accent-blue border-t-transparent animate-spin" />
+        <span>{t('common.loading')}</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-bg-secondary rounded-xl border border-accent-red/30 p-4 text-accent-red text-sm">
+        {t('common.error')}: {error}
+      </div>
+    );
+  }
+
+  if (servers.length === 0) {
+    return (
+      <div className="bg-bg-secondary rounded-xl border border-border p-8 flex flex-col items-center gap-2 text-center">
+        <p className="text-text-muted text-sm">{t('common.noData')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-text-muted">
+        {servers.length} MCP server{servers.length !== 1 ? 's' : ''} configured
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {servers.map((server) => (
+          <ServerCard key={server.name} server={server} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ConnectorsPanel() {
   const { t } = useI18n();
   const { currentAgent } = useAgentStore();
-  const { scope, projectPath, projects } = useScope();
+  const { projectPath, projects } = useScope();
+  const projectOnly = useUiStore((s) => s.projectOnly);
 
-  const apiUrl = scope === 'project' && projectPath
+  const globalApiUrl = `/api/connectors?agent=${currentAgent}`;
+  const projectApiUrl = projectPath
     ? `/api/connectors?agent=${currentAgent}&scope=project&path=${encodeURIComponent(projectPath)}`
-    : `/api/connectors?agent=${currentAgent}`;
-
-  const { data, loading, error, reload } = useFetch<ConnectorsResponse>(apiUrl);
-
-  const servers = data?.mcpServers ?? [];
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-text-primary">{t('tabs.connectors')}</h2>
-        <button
-          onClick={reload}
-          className="text-sm text-text-muted hover:text-text-primary transition-colors px-3 py-1.5 rounded-lg border border-border hover:border-border-hover"
-        >
-          {t('common.retry')}
-        </button>
       </div>
 
-      {scope === 'project' && projects.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <p className="text-text-muted text-sm">{t('common.registerProjects')}</p>
+      {!projectOnly && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ScopeBadge scope="global" />
+          </div>
+          <ConnectorsSection apiUrl={globalApiUrl} t={t} />
+        </section>
+      )}
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <ScopeBadge scope="project" />
         </div>
-      )}
-
-      {(scope === 'global' || projectPath) && (
-        <>
-          {loading && (
-            <div className="flex items-center gap-2 text-text-muted">
-              <div className="w-4 h-4 rounded-full border-2 border-accent-blue border-t-transparent animate-spin" />
-              <span>{t('common.loading')}</span>
-            </div>
-          )}
-
-          {error && !loading && (
-            <div className="bg-bg-secondary rounded-xl border border-accent-red/30 p-4 text-accent-red text-sm">
-              {t('common.error')}: {error}
-            </div>
-          )}
-
-          {!loading && !error && servers.length === 0 && (
-            <div className="bg-bg-secondary rounded-xl border border-border p-8 flex flex-col items-center gap-2 text-center">
-              <svg className="w-8 h-8 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-              <p className="text-text-muted text-sm">{t('common.noData')}</p>
-            </div>
-          )}
-
-          {!loading && !error && servers.length > 0 && (
-            <>
-              <p className="text-sm text-text-muted">
-                {servers.length} MCP server{servers.length !== 1 ? 's' : ''} configured
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {servers.map((server) => (
-                  <ServerCard key={server.name} server={server} />
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
+        {projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <p className="text-text-muted text-sm">{t('common.registerProjects')}</p>
+          </div>
+        ) : projectApiUrl ? (
+          <ConnectorsSection apiUrl={projectApiUrl} t={t} />
+        ) : (
+          <div className="bg-bg-secondary rounded-xl border border-border p-8 text-center">
+            <p className="text-text-muted text-sm">{t('common.noData')}</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
