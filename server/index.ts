@@ -9,6 +9,7 @@ import { handleHooks } from './routes/hooks';
 import { handleAgentsDef } from './routes/agents-def';
 import { handleConnectors } from './routes/connectors';
 import { handlePlugins } from './routes/plugins';
+import { handlePermissions } from './routes/permissions';
 import { handleProjects } from './routes/projects';
 import { handleAgentTypes } from './routes/agent-types';
 import { handleSystem } from './routes/system';
@@ -49,10 +50,12 @@ export function apiMiddlewarePlugin(): Plugin {
             await handleHooks(req, res, pathname);
           } else if (pathname === '/api/agent-defs') {
             await handleAgentsDef(req, res);
-          } else if (pathname === '/api/connectors') {
-            await handleConnectors(req, res);
-          } else if (pathname === '/api/plugins') {
-            await handlePlugins(req, res);
+          } else if (pathname.startsWith('/api/connectors')) {
+            await handleConnectors(req, res, pathname);
+          } else if (pathname.startsWith('/api/plugins')) {
+            await handlePlugins(req, res, pathname);
+          } else if (pathname === '/api/permissions') {
+            await handlePermissions(req, res);
           } else if (pathname.startsWith('/api/projects')) {
             await handleProjects(req, res, pathname);
           } else if (pathname.startsWith('/api/agent-types')) {
