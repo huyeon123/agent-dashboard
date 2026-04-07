@@ -1,0 +1,101 @@
+{
+  "app": {
+    "title": "Multi-Agent Dashboard"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "instructions": "Instructions",
+    "skills": "Skills",
+    "connectors": "MCP",
+    "hooks": "Hooks",
+    "permissions": "Permissions",
+    "agentsDef": "Agents",
+    "plugins": "Plugins",
+    "monitor": "Monitor",
+    "capabilities": "Capabilities"
+  },
+  "common": {
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "create": "Create",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "search": "Search",
+    "noData": "No data available",
+    "unsupported": "This agent does not support this feature",
+    "global": "Global",
+    "project": "Project",
+    "user": "User",
+    "plugin": "Plugin",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "registerProjects": "Register projects in Settings first"
+  },
+  "overview": {
+    "title": "Dashboard Overview",
+    "instructions": "Instruction Sections",
+    "rules": "Rules",
+    "skills": "Skills",
+    "hooks": "Hooks",
+    "agents": "Agents",
+    "plugins": "Plugins",
+    "connectors": "MCP",
+    "preview": "Instructions Preview"
+  },
+  "instructions": {
+    "globalTitle": "Global Instructions",
+    "projectTitle": "Project Instructions",
+    "addSection": "Add Section",
+    "addRule": "Add Rule",
+    "deleteSection": "Delete Section",
+    "saved": "Instructions saved",
+    "noInstructions": "No instruction file found",
+    "registerProjects": "Register projects in Settings to manage project instructions"
+  },
+  "skills": {
+    "title": "Skills Management",
+    "createNew": "Create New Skill",
+    "name": "Skill Name",
+    "description": "Description",
+    "content": "Content",
+    "scope": "Scope",
+    "deleted": "Skill deleted",
+    "created": "Skill created"
+  },
+  "hooks": {
+    "title": "Hooks Management",
+    "event": "Event",
+    "matcher": "Matcher",
+    "command": "Command",
+    "toggleAll": "Toggle All",
+    "permissions": "Permissions",
+    "allow": "Allow",
+    "deny": "Deny"
+  },
+  "agentsDef": {
+    "title": "Agent Definitions",
+    "model": "Model",
+    "tools": "Tools",
+    "scope": "Scope"
+  },
+  "settings": {
+    "title": "Settings Editor",
+    "saved": "Settings saved",
+    "invalidJson": "Invalid JSON",
+    "backup": "Backup created",
+    "cleanup": "File Cleanup",
+    "scanFiles": "Scan Files",
+    "guide": "Guide"
+  },
+  "agentSelector": {
+    "label": "Select Agent"
+  },
+  "scopeSelector": {
+    "noProjects": "Register projects in Settings first"
+  }
+}
