@@ -4,6 +4,7 @@ import { setCorsHeaders, getPathname, jsonError } from './helpers';
 import { handleInstructions } from './routes/instructions';
 import { handleSettings } from './routes/settings';
 import { handleSkills } from './routes/skills';
+import { handleRules } from './routes/rules';
 import { handleHooks } from './routes/hooks';
 import { handleAgentsDef } from './routes/agents-def';
 import { handleConnectors } from './routes/connectors';
@@ -11,6 +12,7 @@ import { handlePlugins } from './routes/plugins';
 import { handleProjects } from './routes/projects';
 import { handleAgentTypes } from './routes/agent-types';
 import { handleSystem } from './routes/system';
+import { handleOverview } from './routes/overview';
 
 export function apiMiddlewarePlugin(): Plugin {
   return {
@@ -35,6 +37,10 @@ export function apiMiddlewarePlugin(): Plugin {
         try {
           if (pathname.startsWith('/api/instructions')) {
             await handleInstructions(req, res, pathname);
+          } else if (pathname === '/api/rules') {
+            await handleRules(req, res);
+          } else if (pathname.startsWith('/api/overview')) {
+            await handleOverview(req, res, pathname);
           } else if (pathname.startsWith('/api/settings')) {
             await handleSettings(req, res);
           } else if (pathname === '/api/skills') {
@@ -51,7 +57,7 @@ export function apiMiddlewarePlugin(): Plugin {
             await handleProjects(req, res, pathname);
           } else if (pathname.startsWith('/api/agent-types')) {
             await handleAgentTypes(req, res, pathname);
-          } else if (pathname.startsWith('/api/system') || pathname.startsWith('/api/sessions') || pathname === '/api/open-folder') {
+          } else if (pathname.startsWith('/api/system') || pathname.startsWith('/api/sessions') || pathname.startsWith('/api/session') || pathname === '/api/open-folder') {
             await handleSystem(req, res, pathname);
           } else {
             jsonError(res, 'Not found', 404);
