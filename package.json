@@ -19,23 +19,17 @@
   },
   "private": true,
   "type": "module",
-  "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "dev:electron": "concurrently -k \"vite\" \"sleep 2 && ELECTRON_VITE_DEV=1 electron .\"",
     "build": "tsc -b && vite build",
-    "build:electron": "esbuild electron/main.ts --bundle --platform=node --outfile=dist-electron/main.cjs --external:electron --external:electron-updater --format=cjs",
-    "build:all": "npm run build && npm run build:electron",
     "build:standalone": "esbuild standalone/server.ts --bundle --platform=node --outfile=dist-standalone/server.cjs --format=cjs",
     "build:web": "npm run build && npm run build:standalone",
     "start": "node dist-standalone/server.cjs",
-    "pack": "npm run build:all && electron-builder --mac",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
-    "electron-updater": "^6.8.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
@@ -43,45 +37,12 @@
     "tailwindcss": "^4.2.2",
     "zustand": "^5.0.12"
   },
-  "build": {
-    "appId": "com.agentdashboard.app",
-    "productName": "Agent Dashboard",
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "huyeon123",
-        "repo": "agent-dashboard"
-      }
-    ],
-    "mac": {
-      "category": "public.app-category.developer-tools",
-      "target": [
-        "dmg"
-      ]
-    },
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "data",
-        "to": "data"
-      }
-    ],
-    "directories": {
-      "output": "release"
-    }
-  },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "concurrently": "^9.2.1",
-    "electron": "^41.1.1",
-    "electron-builder": "^26.8.1",
     "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
