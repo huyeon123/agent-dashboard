@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# Agent Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A unified web dashboard for managing configuration and settings across multiple AI coding agents — Claude Code, Codex, Copilot, OpenCode, and more.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Agent Dashboard provides a single control plane to view and manage:
 
-## React Compiler
+- **Skills** — agent skill definitions and activation rules
+- **Hooks** — lifecycle hooks (SessionStart, PreToolUse, PostToolUse, Stop, etc.)
+- **Settings** — agent-specific configuration files
+- **Permissions** — tool allow/deny rules
+- **Capabilities** — supported features per agent
+- **Plugins** — plugin registry and toggle
+- **Rules** — custom instruction rules
+- **Monitor** — real-time agent activity overview
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript, Tailwind CSS 4 |
+| State | Zustand 5 |
+| Backend | Vite middleware plugin (no separate server) |
+| i18n | Korean / English |
+| Markdown | react-markdown + remark-gfm |
+| Build | Vite 8 + tsc |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Project Structure
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```
+src/
+├── features/          # Panel components (skills, hooks, settings, …)
+├── components/        # Layout (Shell, Header, TabNav) and UI primitives
+├── store/             # Zustand stores
+├── hooks/             # Custom React hooks
+├── i18n/              # Translation files (ko.json, en.json)
+└── types/             # Shared TypeScript interfaces
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+server/
+├── index.ts           # Vite middleware plugin + route dispatcher
+├── agents/            # AgentAdapter, registry, types
+└── routes/            # API handlers (one file per feature)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+data/
+├── agents.json        # Agent registry
+└── projects.json      # Project registry
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting Started
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install       # Install dependencies
+npm run dev       # Start dev server at http://localhost:5173
+npm run build     # Production build (tsc + vite)
+npm run preview   # Preview production build
+npm run lint      # Run ESLint
 ```
+
+## Architecture
+
+**Middleware-based API** — The backend runs as a Vite plugin, eliminating the need for a separate Express/Node server during development and production preview.
+
+**AgentAdapter pattern** — A single adapter class abstracts file I/O and config parsing for all supported agent types, keeping feature panels decoupled from agent-specific logic.
+
+**Feature-first layout** — Each feature (skills, hooks, permissions, etc.) is a self-contained panel with its own types, API route, and i18n keys.
+
+## Development Workflow
+
+See [AGENTS.md](./AGENTS.md) for the full development guide, including API contract specs, QA checklist, i18n coverage requirements, and the multi-agent team workflow.
