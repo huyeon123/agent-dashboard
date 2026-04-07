@@ -65,6 +65,9 @@ jobs:
   build-release:
     needs: prepare
     runs-on: macos-latest
+    # secrets는 if 조건에서 직접 참조 불가 → job env로 우회
+    env:
+      CERT_CONFIGURED: ${{ secrets.APPLE_CERTIFICATE != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +84,7 @@ jobs:
 
       # ── 코드 서명 (선택): APPLE_CERTIFICATE 시크릿 설정 시 활성화 ──
       - name: Import Apple certificate
-        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        if: env.CERT_CONFIGURED == 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -103,17 +106,15 @@ jobs:
       - name: Build Electron main process
         run: npm run build:electron
 
-      # 미서명 빌드
       - name: Package macOS app (unsigned)
-        if: ${{ secrets.APPLE_CERTIFICATE == '' }}
+        if: env.CERT_CONFIGURED != 'true'
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --mac --publish never
 
-      # 서명 포함 빌드
       - name: Package macOS app (signed)
-        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        if: env.CERT_CONFIGURED == 'true'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
