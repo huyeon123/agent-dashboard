@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useFetch } from '../../hooks/use-fetch';
 import { useToast } from '../../hooks/use-toast';
+import { useAgentStore } from '../../store/agent-store';
 
 interface SystemStatus {
   cliVersion: string;
@@ -12,12 +13,17 @@ interface Session {
   pid: number;
   cpu: number;
   mem: number;
-  command: string;
+  tty: string;
+  started: string;
+  cwd: string;
+  sessionId?: string;
+  name?: string;
 }
 
 export function MonitorPanel() {
-  const { data: status, loading: statusLoading, error: statusError, reload: reloadStatus } = useFetch<SystemStatus>('/api/system/status');
-  const { data: sessions, loading: sessionsLoading, error: sessionsError, reload: reloadSessions } = useFetch<Session[]>('/api/sessions');
+  const currentAgent = useAgentStore((s) => s.currentAgent);
+  const { data: status, loading: statusLoading, error: statusError, reload: reloadStatus } = useFetch<SystemStatus>(`/api/system/status?agent=${currentAgent}`);
+  const { data: sessions, loading: sessionsLoading, error: sessionsError, reload: reloadSessions } = useFetch<Session[]>(`/api/sessions?agent=${currentAgent}`);
   const { toasts, addToast, removeToast } = useToast();
   const [killingPid, setKillingPid] = useState<number | null>(null);
 
@@ -154,9 +160,13 @@ export function MonitorPanel() {
                 <thead className="sticky top-0 bg-bg-tertiary border-b border-border">
                   <tr>
                     <th className="text-left px-4 py-2.5 text-xs text-text-muted font-medium w-20">PID</th>
+                    <th className="text-left px-4 py-2.5 text-xs text-text-muted font-medium w-24">상태</th>
+                    <th className="text-left px-4 py-2.5 text-xs text-text-muted font-medium w-60">세션</th>
                     <th className="text-right px-4 py-2.5 text-xs text-text-muted font-medium w-20">CPU%</th>
                     <th className="text-right px-4 py-2.5 text-xs text-text-muted font-medium w-20">MEM%</th>
-                    <th className="text-left px-4 py-2.5 text-xs text-text-muted font-medium">Command</th>
+                    <th className="text-left px-4 py-2.5 text-xs text-text-muted font-medium w-24">TTY</th>
+                    <th className="text-left px-4 py-2.5 text-xs text-text-muted font-medium w-28">시작 시간</th>
+                    <th className="text-left px-4 py-2.5 text-xs text-text-muted font-medium">작업 디렉토리</th>
                     <th className="px-4 py-2.5 w-20" />
                   </tr>
                 </thead>
@@ -167,6 +177,28 @@ export function MonitorPanel() {
                       className="border-b border-border last:border-0 hover:bg-bg-tertiary/50 transition-colors"
                     >
                       <td className="px-4 py-2.5 font-mono text-text-secondary text-xs">{session.pid}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-accent-green/10 text-accent-green border border-accent-green/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent-green" />
+                          실행 중
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 max-w-0">
+                        {session.sessionId ? (
+                          <div className="flex flex-col gap-0.5">
+                            {session.name && (
+                              <span className="text-xs text-text-primary font-medium truncate block" title={session.name}>
+                                {session.name}
+                              </span>
+                            )}
+                            <span className="text-xs font-mono text-text-muted truncate block" title={session.sessionId}>
+                              {session.sessionId.slice(0, 8)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-text-muted">-</span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 text-right font-mono text-xs">
                         <span
                           className={
@@ -193,8 +225,10 @@ export function MonitorPanel() {
                           {session.mem.toFixed(1)}%
                         </span>
                       </td>
+                      <td className="px-4 py-2.5 font-mono text-text-secondary text-xs">{session.tty}</td>
+                      <td className="px-4 py-2.5 font-mono text-text-secondary text-xs">{session.started}</td>
                       <td className="px-4 py-2.5 font-mono text-text-primary text-xs max-w-0">
-                        <span className="block truncate">{session.command}</span>
+                        <span className="block truncate" title={session.cwd}>{session.cwd || '-'}</span>
                       </td>
                       <td className="px-4 py-2.5 text-center">
                         <button
