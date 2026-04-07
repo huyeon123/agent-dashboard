@@ -18,6 +18,7 @@ dist-ssr
 # Workspace snapshots & OMC state
 _workspace*/
 .omc/
+.omx/
 
 # Editor directories and files
 .vscode/*
