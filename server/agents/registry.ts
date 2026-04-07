@@ -3,7 +3,7 @@ import path from 'path';
 import type { AgentConfig, AgentsRegistry } from './types';
 import { AgentAdapter } from './adapter';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_DIR = process.env.DASHBOARD_DATA_DIR || path.join(process.cwd(), 'data');
 const AGENTS_FILE = path.join(DATA_DIR, 'agents.json');
 
 let cachedRegistry: AgentsRegistry | null = null;

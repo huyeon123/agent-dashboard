@@ -2,7 +2,15 @@
   "name": "agent-dashboard",
   "version": "0.1.0",
   "description": "Unified web dashboard for managing AI coding agents",
-  "keywords": ["ai", "dashboard", "react", "typescript", "claude-code", "copilot", "coding-agent"],
+  "keywords": [
+    "ai",
+    "dashboard",
+    "react",
+    "typescript",
+    "claude-code",
+    "copilot",
+    "coding-agent"
+  ],
   "author": "huyeon123",
   "license": "MIT",
   "repository": {
@@ -11,9 +19,14 @@
   },
   "private": true,
   "type": "module",
+  "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "concurrently -k \"vite\" \"sleep 2 && ELECTRON_VITE_DEV=1 electron .\"",
     "build": "tsc -b && vite build",
+    "build:electron": "esbuild electron/main.ts --bundle --platform=node --outfile=dist-electron/main.cjs --external:electron --format=cjs",
+    "build:all": "npm run build && npm run build:electron",
+    "pack": "npm run build:all && electron-builder --mac",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -26,12 +39,34 @@
     "tailwindcss": "^4.2.2",
     "zustand": "^5.0.12"
   },
+  "build": {
+    "appId": "com.agentdashboard.app",
+    "productName": "Agent Dashboard",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": ["dmg"]
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "extraResources": [
+      { "from": "data", "to": "data" }
+    ],
+    "directories": {
+      "output": "release"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "electron": "^41.1.1",
+    "electron-builder": "^26.8.1",
+    "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",

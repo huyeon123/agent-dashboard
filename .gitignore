@@ -16,6 +16,9 @@ dist-ssr
 !data/
 data/projects.json
 
+dist-electron/
+release/
+
 # Workspace snapshots & OMC state
 _workspace*/
 .omc/

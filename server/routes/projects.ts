@@ -20,7 +20,8 @@ interface ProjectsData {
   categories: string[];
 }
 
-const PROJECTS_FILE = path.join(process.cwd(), 'data', 'projects.json');
+const DATA_DIR = process.env.DASHBOARD_DATA_DIR || path.join(process.cwd(), 'data');
+const PROJECTS_FILE = path.join(DATA_DIR, 'projects.json');
 const DEFAULT_CATEGORIES = ['웹 애플리케이션', 'API 서버', 'CLI 도구', '라이브러리', '기타'];
 
 function loadProjects(): ProjectsData {
