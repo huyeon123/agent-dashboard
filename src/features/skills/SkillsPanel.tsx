@@ -7,25 +7,30 @@ import { useScope } from '../../hooks/use-scope';
 import { useUiStore } from '../../store/ui-store';
 import type { Skill, SkillSource, CreateSkillInput } from '../../types/skills';
 
-const SOURCE_BADGE: Record<SkillSource, { label: string; color: string }> = {
-  user: { label: 'Global', color: 'text-accent-purple bg-accent-purple/10 border-accent-purple/20' },
-  plugin: { label: 'Plugin', color: 'text-accent-blue bg-accent-blue/10 border-accent-blue/20' },
-  project: { label: 'Project', color: 'text-accent-green bg-accent-green/10 border-accent-green/20' },
-};
-
 function SourceBadge({ source }: { source: SkillSource }) {
-  const { label, color } = SOURCE_BADGE[source] ?? SOURCE_BADGE.user;
+  const { t } = useI18n();
+  const labels: Record<SkillSource, string> = {
+    user: t('common.global'),
+    plugin: t('common.plugin'),
+    project: t('common.project'),
+  };
+  const colors: Record<SkillSource, string> = {
+    user: 'text-accent-purple bg-accent-purple/10 border-accent-purple/20',
+    plugin: 'text-accent-blue bg-accent-blue/10 border-accent-blue/20',
+    project: 'text-accent-green bg-accent-green/10 border-accent-green/20',
+  };
   return (
-    <span className={`text-xs px-2 py-0.5 rounded border font-medium ${color}`}>{label}</span>
+    <span className={`text-xs px-2 py-0.5 rounded border font-medium ${colors[source] ?? colors.user}`}>{labels[source] ?? labels.user}</span>
   );
 }
 
 function ScopeBadge({ scope }: { scope: 'global' | 'project' }) {
+  const { t } = useI18n();
   const colors = {
     global: 'bg-accent-purple/15 text-accent-purple border-accent-purple/20',
     project: 'bg-accent-green/15 text-accent-green border-accent-green/20',
   };
-  const labels = { global: 'Global', project: 'Project' };
+  const labels = { global: t('common.global'), project: t('common.project') };
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${colors[scope]}`}>
       {labels[scope]}
@@ -33,63 +38,191 @@ function ScopeBadge({ scope }: { scope: 'global' | 'project' }) {
   );
 }
 
+function EditSkillDialog({
+  agent,
+  skill,
+  onClose,
+  onUpdated,
+  t,
+}: {
+  agent: string;
+  skill: Skill;
+  onClose: () => void;
+  onUpdated: () => void;
+  t: (k: string) => string;
+}) {
+  const addToast = useToast((s) => s.addToast);
+  const [form, setForm] = useState({
+    name: skill.name,
+    description: skill.description,
+    content: skill.content,
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/skills?agent=${agent}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: skill.path,
+          name: form.name,
+          description: form.description,
+          content: form.content,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      addToast(t('skills.updated'), 'success');
+      onUpdated();
+      onClose();
+    } catch (err) {
+      addToast(String(err), 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-bg-secondary rounded-xl border border-border w-full max-w-md mx-4 p-6">
+        <h3 className="text-text-primary font-semibold mb-4">{t('skills.editSkill')}</h3>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="text-xs text-text-muted mb-1 block">{t('skills.name')}</label>
+            <input
+              required
+              className="w-full bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-border-hover"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted mb-1 block">{t('skills.description')}</label>
+            <textarea
+              className="w-full bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-border-hover resize-none h-20"
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-muted mb-1 block">{t('skills.content')}</label>
+            <textarea
+              required
+              className="w-full bg-bg-tertiary border border-border rounded-lg px-3 py-2 font-mono text-xs text-text-primary focus:outline-none focus:border-border-hover resize-none h-32"
+              value={form.content}
+              onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              className="flex-1 py-2 border border-border rounded-lg text-sm text-text-secondary hover:border-border-hover transition-colors"
+              onClick={onClose}
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 py-2 bg-accent-purple text-white rounded-lg text-sm hover:opacity-80 transition-opacity disabled:opacity-50"
+            >
+              {submitting ? '...' : t('common.save')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function SkillCard({
   skill,
+  agent,
   onDelete,
+  onChanged,
   t,
 }: {
   skill: Skill;
+  agent: string;
   onDelete: (id: string) => void;
+  onChanged: () => void;
   t: (k: string) => string;
 }) {
+  const { tf } = useI18n();
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const canEdit = skill.source === 'user' || skill.source === 'project';
 
   return (
-    <div className="bg-bg-tertiary rounded-lg border border-border">
-      <button
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-bg-secondary/50 transition-colors rounded-lg"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-text-primary text-sm">{skill.name}</span>
-            <SourceBadge source={skill.source} />
-          </div>
-          {skill.description && (
-            <p className="text-text-muted text-xs mt-0.5 truncate">{skill.description}</p>
-          )}
-        </div>
-        <span className="text-text-muted text-xs flex-shrink-0">{expanded ? '▲' : '▼'}</span>
-      </button>
-
-      {expanded && (
-        <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
-          {skill.description && (
-            <p className="text-text-secondary text-sm">{skill.description}</p>
-          )}
-          {skill.content && (
-            <pre className="font-mono text-xs text-text-muted bg-bg-secondary rounded-lg p-3 overflow-auto max-h-40 whitespace-pre-wrap">
-              {skill.content}
-            </pre>
-          )}
-          <div className="flex items-center justify-between">
-            <span className="text-text-muted text-xs">{skill.path}</span>
-            {skill.source === 'user' && (
-              <button
-                className="text-xs text-accent-red hover:text-accent-red/70 transition-colors"
-                onClick={() => {
-                  if (window.confirm(`Delete skill "${skill.name}"?`)) {
-                    onDelete(skill.id);
-                  }
-                }}
-              >
-                {t('common.delete')}
-              </button>
+    <>
+      <div className="bg-bg-tertiary rounded-lg border border-border">
+        <button
+          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-bg-secondary/50 transition-colors rounded-lg"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-text-primary text-sm">{skill.name}</span>
+              <SourceBadge source={skill.source} />
+            </div>
+            {skill.description && (
+              <p className="text-text-muted text-xs mt-0.5 truncate">{skill.description}</p>
             )}
           </div>
-        </div>
+          <span className="text-text-muted text-xs flex-shrink-0">{expanded ? '▲' : '▼'}</span>
+        </button>
+
+        {expanded && (
+          <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
+            {skill.description && (
+              <p className="text-text-secondary text-sm">{skill.description}</p>
+            )}
+            {skill.content && (
+              <pre className="font-mono text-xs text-text-muted bg-bg-secondary rounded-lg p-3 overflow-auto max-h-40 whitespace-pre-wrap">
+                {skill.content}
+              </pre>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-text-muted text-xs">{skill.path}</span>
+              <div className="flex items-center gap-3">
+                {canEdit && (
+                  <button
+                    className="text-xs text-text-muted hover:text-text-primary transition-colors"
+                    onClick={() => setEditing(true)}
+                  >
+                    {t('common.edit')}
+                  </button>
+                )}
+                {(skill.source === 'user' || skill.source === 'project') && (
+                  <button
+                    className="text-xs text-accent-red hover:text-accent-red/70 transition-colors"
+                    onClick={() => {
+                      if (window.confirm(tf('skills.deleteConfirm', { name: skill.name }))) {
+                        onDelete(skill.path);
+                      }
+                    }}
+                  >
+                    {t('common.delete')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {editing && (
+        <EditSkillDialog
+          agent={agent}
+          skill={skill}
+          onClose={() => setEditing(false)}
+          onUpdated={onChanged}
+          t={t}
+        />
       )}
-    </div>
+    </>
   );
 }
 
@@ -201,11 +334,15 @@ function CreateSkillDialog({
 
 function SkillsList({
   skills,
+  agent,
   onDelete,
+  onChanged,
   t,
 }: {
   skills: Skill[];
+  agent: string;
   onDelete: (id: string) => void;
+  onChanged: () => void;
   t: (k: string) => string;
 }) {
   if (skills.length === 0) {
@@ -241,7 +378,7 @@ function SkillsList({
             </h3>
             <div className="space-y-2">
               {group.map((skill) => (
-                <SkillCard key={skill.id} skill={skill} onDelete={onDelete} t={t} />
+                <SkillCard key={skill.id} skill={skill} agent={agent} onDelete={onDelete} onChanged={onChanged} t={t} />
               ))}
             </div>
           </div>
@@ -253,14 +390,16 @@ function SkillsList({
 
 function SkillsSection({
   apiUrl,
+  agent,
   onDelete,
   t,
 }: {
   apiUrl: string;
+  agent: string;
   onDelete: (id: string) => void;
   t: (k: string) => string;
 }) {
-  const { data, loading, error } = useFetch<Skill[]>(apiUrl);
+  const { data, loading, error, reload } = useFetch<Skill[]>(apiUrl);
 
   if (loading) {
     return (
@@ -283,7 +422,7 @@ function SkillsSection({
     return <div className="text-accent-red text-sm">{t('common.error')}: {error}</div>;
   }
 
-  return <SkillsList skills={data ?? []} onDelete={onDelete} t={t} />;
+  return <SkillsList skills={data ?? []} agent={agent} onDelete={onDelete} onChanged={reload} t={t} />;
 }
 
 export function SkillsPanel() {
@@ -293,17 +432,19 @@ export function SkillsPanel() {
   const [showCreate, setShowCreate] = useState(false);
   const { projectPath, projects } = useScope();
   const projectOnly = useUiStore((s) => s.projectOnly);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const globalApiUrl = `/api/skills?agent=${currentAgent}`;
+  const globalApiUrl = `/api/skills?agent=${currentAgent}&_r=${refreshKey}`;
   const projectApiUrl = projectPath
-    ? `/api/skills?agent=${currentAgent}&scope=project&path=${encodeURIComponent(projectPath)}`
+    ? `/api/skills?agent=${currentAgent}&scope=project&path=${encodeURIComponent(projectPath)}&_r=${refreshKey}`
     : null;
 
-  async function handleDelete(id: string) {
+  async function handleDelete(skillPath: string) {
     try {
-      const res = await fetch(`/api/skills/${id}?agent=${currentAgent}`, { method: 'DELETE' });
+      const res = await fetch(`/api/skills?agent=${currentAgent}&path=${encodeURIComponent(skillPath)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       addToast(t('skills.deleted'), 'success');
+      setRefreshKey((k) => k + 1);
     } catch (err) {
       addToast(String(err), 'error');
     }
@@ -313,14 +454,12 @@ export function SkillsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-text-primary">{t('skills.title')}</h2>
-        {!projectOnly && (
-          <button
-            className="px-4 py-1.5 bg-accent-purple text-white rounded-lg text-sm hover:opacity-80 transition-opacity"
-            onClick={() => setShowCreate(true)}
-          >
-            + {t('skills.createNew')}
-          </button>
-        )}
+        <button
+          className="px-4 py-1.5 bg-accent-purple text-white rounded-lg text-sm hover:opacity-80 transition-opacity"
+          onClick={() => setShowCreate(true)}
+        >
+          + {t('skills.createNew')}
+        </button>
       </div>
 
       {!projectOnly && (
@@ -328,7 +467,7 @@ export function SkillsPanel() {
           <div className="flex items-center gap-2">
             <ScopeBadge scope="global" />
           </div>
-          <SkillsSection apiUrl={globalApiUrl} onDelete={handleDelete} t={t} />
+          <SkillsSection apiUrl={globalApiUrl} agent={currentAgent} onDelete={handleDelete} t={t} />
         </section>
       )}
 
@@ -341,7 +480,7 @@ export function SkillsPanel() {
             <p className="text-text-muted text-sm">{t('common.registerProjects')}</p>
           </div>
         ) : projectApiUrl ? (
-          <SkillsSection apiUrl={projectApiUrl} onDelete={handleDelete} t={t} />
+          <SkillsSection apiUrl={projectApiUrl} agent={currentAgent} onDelete={handleDelete} t={t} />
         ) : (
           <div className="bg-bg-secondary rounded-xl border border-border p-8 text-center">
             <p className="text-text-muted text-sm">{t('common.noData')}</p>
@@ -352,9 +491,9 @@ export function SkillsPanel() {
       {showCreate && (
         <CreateSkillDialog
           agent={currentAgent}
-          defaultScope="global"
+          defaultScope={projectOnly ? 'project' : 'global'}
           onClose={() => setShowCreate(false)}
-          onCreated={() => {/* sections will re-fetch via useFetch */}}
+          onCreated={() => setRefreshKey((k) => k + 1)}
           t={t}
         />
       )}
