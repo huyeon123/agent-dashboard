@@ -16,7 +16,7 @@ fi
 # 프로젝트 루트에서 eslint 실행
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 RESULT=$(cd "$PROJECT_DIR" && npx eslint --fix "$FILE_PATH" 2>&1) || true
-ERRORS=$(echo "$RESULT" | grep -cE "\d+ error" || true)
+ERRORS=$(echo "$RESULT" | grep -cE "[0-9]+ error" || true)
 
 if [ "$ERRORS" -gt 0 ]; then
   # JSON 안전하게 이스케이프

@@ -10,8 +10,8 @@ if echo "$FILE_PATH" | grep -qE '/i18n/(ko|en)\.json$'; then
   EN="$PROJECT_DIR/src/i18n/en.json"
 
   if [ -f "$KO" ] && [ -f "$EN" ]; then
-    KO_KEYS=$(jq -r '[paths(scalars)] | map(join(".")) | sort[]' "$KO" 2>/dev/null)
-    EN_KEYS=$(jq -r '[paths(scalars)] | map(join(".")) | sort[]' "$EN" 2>/dev/null)
+    KO_KEYS=$(jq -r '[paths(scalars)] | map(join(".")) | sort[]' "$KO" 2>/dev/null) || exit 0
+    EN_KEYS=$(jq -r '[paths(scalars)] | map(join(".")) | sort[]' "$EN" 2>/dev/null) || exit 0
 
     MISSING_EN=$(comm -23 <(echo "$KO_KEYS") <(echo "$EN_KEYS"))
     MISSING_KO=$(comm -13 <(echo "$KO_KEYS") <(echo "$EN_KEYS"))
