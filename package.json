@@ -26,6 +26,9 @@
     "build": "tsc -b && vite build",
     "build:electron": "esbuild electron/main.ts --bundle --platform=node --outfile=dist-electron/main.cjs --external:electron --external:electron-updater --format=cjs",
     "build:all": "npm run build && npm run build:electron",
+    "build:standalone": "esbuild standalone/server.ts --bundle --platform=node --outfile=dist-standalone/server.cjs --format=cjs",
+    "build:web": "npm run build && npm run build:standalone",
+    "start": "node dist-standalone/server.cjs",
     "pack": "npm run build:all && electron-builder --mac",
     "lint": "eslint .",
     "preview": "vite preview"

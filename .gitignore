@@ -17,6 +17,7 @@ dist-ssr
 data/projects.json
 
 dist-electron/
+dist-standalone/
 release/
 
 # Workspace snapshots & OMC state
