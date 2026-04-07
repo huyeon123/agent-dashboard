@@ -58,12 +58,17 @@ export function Header({ onTabChange }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-bg-secondary">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-accent-purple flex items-center justify-center text-white font-bold text-sm">
-          MA
+        <div className="w-10 h-10 rounded-xl bg-accent-purple flex items-center justify-center text-white font-bold text-sm shadow-[0_0_24px_rgba(167,139,250,0.28)]">
+          AG
         </div>
-        <h1 className="text-lg font-semibold text-text-primary">
-          {t('app.title')}
-        </h1>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold tracking-[-0.02em] leading-none text-text-primary">
+            {t('app.title')}
+          </h1>
+          <span className="text-xs font-medium tracking-[0.18em] uppercase text-accent-purple/90">
+            {t('app.subtitle')}
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">
@@ -126,7 +131,7 @@ export function Header({ onTabChange }: HeaderProps) {
         <button
           onClick={() => onTabChange('settings')}
           className="p-1.5 text-text-secondary hover:text-text-primary bg-bg-tertiary border border-border rounded-lg hover:border-border-hover transition-colors"
-          title="Settings"
+          title={t('common.settings')}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />

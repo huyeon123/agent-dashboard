@@ -1,4 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { translate } from '../i18n';
 
 interface Props {
   children: ReactNode;
@@ -29,13 +30,13 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center">
-          <div className="text-accent-red text-lg font-semibold mb-2">오류가 발생했습니다</div>
+          <div className="text-accent-red text-lg font-semibold mb-2">{translate('common.error')}</div>
           <div className="text-text-secondary text-sm mb-4">{this.state.error?.message}</div>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             className="px-4 py-2 bg-accent-purple text-white rounded-lg hover:bg-accent-purple-hover transition-colors"
           >
-            다시 시도
+            {translate('common.retry')}
           </button>
         </div>
       );
