@@ -17,6 +17,20 @@ function getNestedValue(obj: TranslationMap, path: string): string {
   return typeof current === 'string' ? current : path;
 }
 
+function formatTemplate(
+  template: string,
+  vars: Record<string, string | number>
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
+    const value = vars[key];
+    return value === undefined ? `{${key}}` : String(value);
+  });
+}
+
+export function translate(key: string, locale = useUiStore.getState().locale): string {
+  return getNestedValue(translations[locale], key);
+}
+
 export function useI18n() {
   const locale = useUiStore((s) => s.locale);
   const setLocale = useUiStore((s) => s.setLocale);
@@ -28,5 +42,12 @@ export function useI18n() {
     [locale]
   );
 
-  return { t, locale, setLocale };
+  const tf = useCallback(
+    (key: string, vars: Record<string, string | number>): string => {
+      return formatTemplate(t(key), vars);
+    },
+    [t]
+  );
+
+  return { t, tf, locale, setLocale };
 }
