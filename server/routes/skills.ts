@@ -35,6 +35,15 @@ export async function handleSkills(req: IncomingMessage, res: ServerResponse): P
     const { name, description, content, scope, projectPath } = JSON.parse(body);
     adapter.createSkill(name, description, content, scope, projectPath);
     json(res, { ok: true });
+  } else if (req.method === 'PUT') {
+    const body = await collectBody(req);
+    const { path: skillPath, name, description, content } = JSON.parse(body);
+    if (!skillPath || !name) {
+      jsonError(res, 'Missing "path" or "name"', 400);
+      return;
+    }
+    adapter.updateSkill(skillPath, name, description || '', content || '');
+    json(res, { ok: true });
   } else if (req.method === 'DELETE') {
     const skillPath = query.get('path');
     if (!skillPath) {
@@ -43,5 +52,7 @@ export async function handleSkills(req: IncomingMessage, res: ServerResponse): P
     }
     const ok = adapter.deleteSkill(skillPath);
     json(res, { ok });
+  } else {
+    jsonError(res, 'Method not allowed', 405);
   }
 }
