@@ -13,6 +13,16 @@ export async function handlePlugins(req: IncomingMessage, res: ServerResponse): 
   }
 
   if (req.method === 'GET') {
+    const scope = query.get('scope') || 'global';
+    const projectPath = query.get('path');
+
+    if (scope === 'project') {
+      if (!projectPath) { jsonError(res, 'Missing "path" parameter', 400); return; }
+      const plugins = adapter.getProjectPlugins(projectPath);
+      json(res, plugins);
+      return;
+    }
+
     const plugins = adapter.getPlugins();
     json(res, plugins);
   }
