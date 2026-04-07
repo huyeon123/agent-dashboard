@@ -363,9 +363,9 @@ export class AgentAdapter {
   }
 
   // --- MCP Servers ---
-  getMcpServers(): Array<{ name: string; command: string; args: string[] }> {
+  getMcpServers(): Array<{ name: string; command: string; args: string[]; env?: Record<string, string>; disabled?: boolean }> {
     if (!this.paths.mcp || this.paths.mcp.length === 0) return [];
-    const servers: Array<{ name: string; command: string; args: string[] }> = [];
+    const servers: Array<{ name: string; command: string; args: string[]; env?: Record<string, string>; disabled?: boolean }> = [];
 
     for (const mcpPath of this.paths.mcp) {
       const [file, key] = mcpPath.split('#');
@@ -389,6 +389,8 @@ export class AgentAdapter {
               name,
               command: (c.command as string) || '',
               args: Array.isArray(c.args) ? (c.args as string[]) : [],
+              ...(c.env && typeof c.env === 'object' ? { env: c.env as Record<string, string> } : {}),
+              ...(c.disabled ? { disabled: true } : {}),
             });
           }
         }
@@ -485,9 +487,9 @@ export class AgentAdapter {
   }
 
   // --- Project-Level MCP Servers ---
-  getProjectMcpServers(projectPath: string): Array<{ name: string; command: string; args: string[] }> {
+  getProjectMcpServers(projectPath: string): Array<{ name: string; command: string; args: string[]; env?: Record<string, string>; disabled?: boolean }> {
     if (!this.paths.mcp || this.paths.mcp.length === 0) return [];
-    const servers: Array<{ name: string; command: string; args: string[] }> = [];
+    const servers: Array<{ name: string; command: string; args: string[]; env?: Record<string, string>; disabled?: boolean }> = [];
     const projectHome = path.join(projectPath, this.paths.projectDir);
 
     for (const mcpPath of this.paths.mcp) {
@@ -511,6 +513,8 @@ export class AgentAdapter {
               name,
               command: (c.command as string) || '',
               args: Array.isArray(c.args) ? (c.args as string[]) : [],
+              ...(c.env && typeof c.env === 'object' ? { env: c.env as Record<string, string> } : {}),
+              ...(c.disabled ? { disabled: true } : {}),
             });
           }
         }
@@ -544,6 +548,19 @@ export class AgentAdapter {
 
     if (!fs.existsSync(registryPath)) return [];
 
+    // Read settings.local.json for enabledPlugins state
+    const settingsLocalPath = path.join(this.globalHome, 'settings.local.json');
+    let enabledPlugins: Record<string, boolean> = {};
+    try {
+      const localRaw = safeReadFile(settingsLocalPath);
+      if (localRaw) {
+        const localData = JSON.parse(localRaw);
+        if (localData.enabledPlugins && typeof localData.enabledPlugins === 'object') {
+          enabledPlugins = localData.enabledPlugins as Record<string, boolean>;
+        }
+      }
+    } catch { /* ignore */ }
+
     const mapScope = (s: string): string => {
       if (s === 'user') return 'global';
       if (s === 'local') return 'project';
@@ -566,7 +583,7 @@ export class AgentAdapter {
               name: pluginName,
               version: (e.version as string) || '0.0.0',
               scope: mapScope((e.scope as string) || 'user'),
-              enabled: true,
+              enabled: enabledPlugins[key] !== false,
               path: (e.installPath as string) || pluginsDir,
             });
           }
@@ -593,5 +610,229 @@ export class AgentAdapter {
 
   getProjectPlugins(projectPath: string): Array<{ name: string; version: string; scope: string; enabled: boolean; path: string }> {
     return this.getPlugins().filter((p) => p.scope === 'project' && p.path.startsWith(projectPath));
+  }
+
+  // --- Phase 0: Private helpers for settings JSON ---
+  private readSettingsJson(scope: 'global' | 'project', projectPath?: string): { parsed: Record<string, unknown>; filePath: string } {
+    const hooksPath = this.paths.hooks || 'settings.json#hooks';
+    const [file] = hooksPath.split('#');
+    const filePath = scope === 'project' && projectPath
+      ? path.join(projectPath, this.paths.projectDir, file)
+      : path.join(this.globalHome, file);
+    const raw = safeReadFile(filePath);
+    let parsed: Record<string, unknown> = {};
+    if (raw) {
+      try {
+        const cleaned = raw.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+        parsed = JSON.parse(cleaned);
+      } catch { parsed = {}; }
+    }
+    return { parsed, filePath };
+  }
+
+  private writeSettingsJson(filePath: string, data: Record<string, unknown>): void {
+    ensureDir(path.dirname(filePath));
+    backupFile(filePath);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+
+  // --- Phase 1: Rules CRUD ---
+  createRule(name: string, content: string, scope: 'global' | 'project', projectPath?: string): void {
+    const rulesDir = scope === 'project' && projectPath
+      ? path.join(projectPath, this.paths.rulesDir?.project || '.claude/rules')
+      : resolveHome(this.paths.rulesDir?.global || '~/.claude/rules');
+    ensureDir(rulesDir);
+    const fileName = name.endsWith('.md') ? name : `${name}.md`;
+    fs.writeFileSync(path.join(rulesDir, fileName), content, 'utf-8');
+  }
+
+  updateRule(rulePath: string, content: string): void {
+    backupFile(rulePath);
+    fs.writeFileSync(rulePath, content, 'utf-8');
+  }
+
+  deleteRule(rulePath: string): boolean {
+    if (fs.existsSync(rulePath)) {
+      backupFile(rulePath);
+      fs.unlinkSync(rulePath);
+      return true;
+    }
+    return false;
+  }
+
+  // --- Phase 2: Skills Edit ---
+  updateSkill(skillPath: string, name: string, description: string, content: string): void {
+    backupFile(skillPath);
+    const skillContent = `---\nname: ${name}\ndescription: ${description}\n---\n\n${content}`;
+    fs.writeFileSync(skillPath, skillContent, 'utf-8');
+  }
+
+  // --- Phase 3: Agent Definitions CRUD ---
+  createAgentDef(name: string, description: string, model: string, tools: string[], content: string, scope: 'global' | 'project', projectPath?: string): void {
+    if (!this.paths.agents) return;
+    const dir = scope === 'project' && projectPath
+      ? path.join(projectPath, this.paths.projectDir, this.paths.agents)
+      : path.join(this.globalHome, this.paths.agents);
+    ensureDir(dir);
+    const toolsYaml = tools.length > 0 ? `tools:\n${tools.map(t => `  - ${t}`).join('\n')}` : 'tools: []';
+    const fileContent = `---\nname: ${name}\ndescription: ${description}\nmodel: ${model}\n${toolsYaml}\n---\n\n${content}`;
+    const fileName = name.replace(/[^a-z0-9-]/gi, '-').toLowerCase() + '.md';
+    fs.writeFileSync(path.join(dir, fileName), fileContent, 'utf-8');
+  }
+
+  updateAgentDef(defPath: string, name: string, description: string, model: string, tools: string[], content: string): void {
+    backupFile(defPath);
+    const toolsYaml = tools.length > 0 ? `tools:\n${tools.map(t => `  - ${t}`).join('\n')}` : 'tools: []';
+    const fileContent = `---\nname: ${name}\ndescription: ${description}\nmodel: ${model}\n${toolsYaml}\n---\n\n${content}`;
+    fs.writeFileSync(defPath, fileContent, 'utf-8');
+  }
+
+  deleteAgentDef(defPath: string): boolean {
+    if (fs.existsSync(defPath)) {
+      backupFile(defPath);
+      fs.unlinkSync(defPath);
+      return true;
+    }
+    return false;
+  }
+
+  // --- Phase 4: MCP Servers CRUD + Toggle ---
+  addMcpServer(name: string, command: string, args: string[], env: Record<string, string> | undefined, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    if (!parsed.mcpServers) parsed.mcpServers = {};
+    const config: Record<string, unknown> = { command, args };
+    if (env && Object.keys(env).length > 0) config.env = env;
+    (parsed.mcpServers as Record<string, unknown>)[name] = config;
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  updateMcpServer(name: string, command: string, args: string[], env: Record<string, string> | undefined, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    if (!parsed.mcpServers) parsed.mcpServers = {};
+    const config: Record<string, unknown> = { command, args };
+    if (env && Object.keys(env).length > 0) config.env = env;
+    (parsed.mcpServers as Record<string, unknown>)[name] = config;
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  deleteMcpServer(name: string, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    if (parsed.mcpServers) {
+      delete (parsed.mcpServers as Record<string, unknown>)[name];
+    }
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  toggleMcpServer(name: string, disabled: boolean, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    if (!parsed.mcpServers) return;
+    const servers = parsed.mcpServers as Record<string, Record<string, unknown>>;
+    if (!servers[name]) return;
+    if (disabled) { servers[name].disabled = true; }
+    else { delete servers[name].disabled; }
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  // --- Phase 5: Hooks CRUD + Toggle ---
+  addHook(event: string, matcher: string, hook: { type: string; command: string; timeout?: number }, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    if (!parsed.hooks) parsed.hooks = {};
+    const hooksConfig = parsed.hooks as Record<string, Array<{ matcher: string; hooks: unknown[] }>>;
+    if (!hooksConfig[event]) hooksConfig[event] = [];
+    const group = hooksConfig[event].find(g => g.matcher === matcher);
+    const hookEntry: Record<string, unknown> = { type: hook.type };
+    if (hook.type === 'command') hookEntry.command = hook.command;
+    else if (hook.type === 'http') hookEntry.url = hook.command;
+    else if (hook.type === 'prompt') hookEntry.prompt = hook.command;
+    else hookEntry.command = hook.command;
+    if (hook.timeout !== undefined) hookEntry.timeout = hook.timeout;
+    if (group) { group.hooks.push(hookEntry); }
+    else { hooksConfig[event].push({ matcher, hooks: [hookEntry] }); }
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  deleteHook(event: string, matcher: string, hookIndex: number, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    const hooksConfig = (parsed.hooks || {}) as Record<string, Array<{ matcher: string; hooks: unknown[] }>>;
+    if (!hooksConfig[event]) return;
+    const groupIdx = hooksConfig[event].findIndex(g => g.matcher === matcher);
+    if (groupIdx === -1) return;
+    hooksConfig[event][groupIdx].hooks.splice(hookIndex, 1);
+    if (hooksConfig[event][groupIdx].hooks.length === 0) {
+      hooksConfig[event].splice(groupIdx, 1);
+    }
+    if (hooksConfig[event].length === 0) delete hooksConfig[event];
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  updateHook(event: string, matcher: string, hookIndex: number, hook: { type: string; command: string; timeout?: number }, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    const hooksConfig = (parsed.hooks || {}) as Record<string, Array<{ matcher: string; hooks: Record<string, unknown>[] }>>;
+    if (!hooksConfig[event]) return;
+    const groupIdx = hooksConfig[event].findIndex(g => g.matcher === matcher);
+    if (groupIdx === -1) return;
+    const group = hooksConfig[event][groupIdx];
+    if (hookIndex < 0 || hookIndex >= group.hooks.length) return;
+    const hookEntry: Record<string, unknown> = { type: hook.type, command: hook.command };
+    if (hook.timeout !== undefined) hookEntry.timeout = hook.timeout;
+    group.hooks[hookIndex] = hookEntry;
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  toggleAllHooks(disabled: boolean, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    if (disabled) { parsed.disableAllHooks = true; }
+    else { delete parsed.disableAllHooks; }
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  // --- Phase 6: Permissions CRUD ---
+  getPermissions(scope: 'global' | 'project', projectPath?: string): { allow: string[]; deny: string[] } {
+    const { parsed } = this.readSettingsJson(scope, projectPath);
+    const permissions = (parsed.permissions || {}) as { allow?: string[]; deny?: string[] };
+    return {
+      allow: Array.isArray(permissions.allow) ? permissions.allow : [],
+      deny: Array.isArray(permissions.deny) ? permissions.deny : [],
+    };
+  }
+
+  addPermission(list: 'allow' | 'deny', entry: string, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    if (!parsed.permissions) parsed.permissions = { allow: [], deny: [] };
+    const perms = parsed.permissions as { allow: string[]; deny: string[] };
+    if (!Array.isArray(perms[list])) perms[list] = [];
+    perms[list].push(entry);
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  updatePermission(list: 'allow' | 'deny', index: number, entry: string, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    const perms = (parsed.permissions || {}) as { allow?: string[]; deny?: string[] };
+    if (!Array.isArray(perms[list])) return;
+    (perms[list] as string[])[index] = entry;
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  deletePermission(list: 'allow' | 'deny', index: number, scope: 'global' | 'project', projectPath?: string): void {
+    const { parsed, filePath } = this.readSettingsJson(scope, projectPath);
+    const perms = (parsed.permissions || {}) as { allow?: string[]; deny?: string[] };
+    if (!Array.isArray(perms[list])) return;
+    (perms[list] as string[]).splice(index, 1);
+    this.writeSettingsJson(filePath, parsed);
+  }
+
+  // --- Phase 7: Plugins Toggle ---
+  togglePlugin(pluginKey: string, enabled: boolean): void {
+    const settingsLocalPath = path.join(this.globalHome, 'settings.local.json');
+    let data: Record<string, unknown> = {};
+    try {
+      const raw = safeReadFile(settingsLocalPath);
+      if (raw) data = JSON.parse(raw);
+    } catch { /* ignore */ }
+    if (!data.enabledPlugins) data.enabledPlugins = {};
+    (data.enabledPlugins as Record<string, boolean>)[pluginKey] = enabled;
+    ensureDir(path.dirname(settingsLocalPath));
+    backupFile(settingsLocalPath);
+    fs.writeFileSync(settingsLocalPath, JSON.stringify(data, null, 2), 'utf-8');
   }
 }
