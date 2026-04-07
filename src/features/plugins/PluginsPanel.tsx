@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useFetch } from '../../hooks/use-fetch';
 import { useAgentStore } from '../../store/agent-store';
 import { useToast } from '../../hooks/use-toast';
@@ -14,12 +14,13 @@ interface Plugin {
 }
 
 function ScopeBadge({ scope }: { scope: 'global' | 'project' | 'local' }) {
+  const { t } = useI18n();
   const colors = {
     global: 'bg-accent-purple/15 text-accent-purple border-accent-purple/20',
     project: 'bg-accent-green/15 text-accent-green border-accent-green/20',
     local: 'bg-accent-blue/15 text-accent-blue border-accent-blue/20',
   };
-  const labels = { global: 'Global', project: 'Project', local: 'Local' };
+  const labels = { global: t('common.global'), project: t('common.project'), local: t('common.local') };
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${colors[scope]}`}>
       {labels[scope]}
@@ -27,8 +28,19 @@ function ScopeBadge({ scope }: { scope: 'global' | 'project' | 'local' }) {
   );
 }
 
-function PluginCard({ plugin, onOpenFolder }: { plugin: Plugin; onOpenFolder: (path: string) => void }) {
+function PluginCard({
+  plugin,
+  onOpenFolder,
+  onToggle,
+  toggling,
+}: {
+  plugin: Plugin;
+  onOpenFolder: (path: string) => void;
+  onToggle: (plugin: Plugin) => void;
+  toggling: boolean;
+}) {
   const { t } = useI18n();
+  const scopeKey = ['global', 'project', 'local'].includes(plugin.scope) ? `common.${plugin.scope}` : null;
   return (
     <div className="rounded-xl bg-bg-secondary border border-border p-4 flex items-center gap-4 hover:border-border-hover transition-colors">
       <div className="flex-1 min-w-0">
@@ -38,29 +50,30 @@ function PluginCard({ plugin, onOpenFolder }: { plugin: Plugin; onOpenFolder: (p
             v{plugin.version}
           </span>
           <span className="px-2 py-0.5 rounded-full bg-bg-tertiary text-text-muted text-xs shrink-0">
-            {plugin.scope}
+            {scopeKey ? t(scopeKey) : plugin.scope}
           </span>
         </div>
         <p className="text-text-muted text-xs mt-1 truncate">{plugin.path}</p>
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              plugin.enabled ? 'bg-accent-green' : 'bg-text-muted'
-            }`}
-          />
-          <span className={`text-xs ${plugin.enabled ? 'text-accent-green' : 'text-text-muted'}`}>
-            {plugin.enabled ? t('common.enabled') : t('common.disabled')}
-          </span>
-        </div>
+        <button
+          onClick={() => onToggle(plugin)}
+          disabled={toggling}
+          className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors disabled:opacity-50 ${
+            plugin.enabled
+              ? 'bg-accent-green/20 text-accent-green border-accent-green/30 hover:opacity-80'
+              : 'bg-bg-tertiary text-text-muted border-border hover:border-border-hover'
+          }`}
+        >
+          {toggling ? '...' : plugin.enabled ? t('common.enabled') : t('common.disabled')}
+        </button>
 
         <button
           onClick={() => onOpenFolder(plugin.path)}
           className="px-2.5 py-1.5 text-xs rounded-lg bg-bg-tertiary text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
         >
-          Open
+          {t('common.open')}
         </button>
       </div>
     </div>
@@ -75,10 +88,19 @@ export function PluginsPanel() {
     currentAgent ? `/api/plugins?agent=${currentAgent}` : null
   );
   const { addToast } = useToast();
+  const [togglingName, setTogglingName] = useState<string | null>(null);
+  const [localPlugins, setLocalPlugins] = useState<Plugin[] | null>(null);
 
   useEffect(() => {
     reload();
   }, [currentAgent, reload]);
+
+  // Sync local state with fetched data
+  useEffect(() => {
+    if (plugins) {
+      setLocalPlugins(plugins);
+    }
+  }, [plugins]);
 
   const handleOpenFolder = async (path: string) => {
     try {
@@ -87,13 +109,45 @@ export function PluginsPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path }),
       });
-      addToast('Folder opened', 'success');
+      addToast(t('common.open'), 'success');
     } catch {
-      addToast('Cannot open folder', 'error');
+      addToast(t('common.error'), 'error');
     }
   };
 
-  const allPlugins = plugins ?? [];
+  const handleToggle = async (plugin: Plugin) => {
+    setTogglingName(plugin.name);
+    const newEnabled = !plugin.enabled;
+
+    // Optimistic update
+    setLocalPlugins((prev) =>
+      (prev ?? []).map((p) =>
+        p.name === plugin.name ? { ...p, enabled: newEnabled } : p
+      )
+    );
+
+    try {
+      const res = await fetch(`/api/plugins/toggle?agent=${currentAgent}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: plugin.name, enabled: newEnabled }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      addToast(t('plugins.toggled'), 'success');
+    } catch (err) {
+      // Revert optimistic update
+      setLocalPlugins((prev) =>
+        (prev ?? []).map((p) =>
+          p.name === plugin.name ? { ...p, enabled: plugin.enabled } : p
+        )
+      );
+      addToast(String(err), 'error');
+    } finally {
+      setTogglingName(null);
+    }
+  };
+
+  const allPlugins = localPlugins ?? plugins ?? [];
   const globalPlugins = allPlugins.filter((p) => p.scope !== 'project');
   const projectPlugins = allPlugins.filter((p) => p.scope === 'project');
 
@@ -140,7 +194,13 @@ export function PluginsPanel() {
               ) : (
                 <div className="flex flex-col gap-3">
                   {globalPlugins.map((plugin) => (
-                    <PluginCard key={plugin.name} plugin={plugin} onOpenFolder={handleOpenFolder} />
+                    <PluginCard
+                      key={plugin.name}
+                      plugin={plugin}
+                      onOpenFolder={handleOpenFolder}
+                      onToggle={handleToggle}
+                      toggling={togglingName === plugin.name}
+                    />
                   ))}
                 </div>
               )}
@@ -159,7 +219,13 @@ export function PluginsPanel() {
             ) : (
               <div className="flex flex-col gap-3">
                 {projectPlugins.map((plugin) => (
-                  <PluginCard key={plugin.name} plugin={plugin} onOpenFolder={handleOpenFolder} />
+                  <PluginCard
+                    key={plugin.name}
+                    plugin={plugin}
+                    onOpenFolder={handleOpenFolder}
+                    onToggle={handleToggle}
+                    toggling={togglingName === plugin.name}
+                  />
                 ))}
               </div>
             )}
