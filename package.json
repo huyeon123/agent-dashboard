@@ -24,7 +24,7 @@
     "dev": "vite",
     "dev:electron": "concurrently -k \"vite\" \"sleep 2 && ELECTRON_VITE_DEV=1 electron .\"",
     "build": "tsc -b && vite build",
-    "build:electron": "esbuild electron/main.ts --bundle --platform=node --outfile=dist-electron/main.cjs --external:electron --format=cjs",
+    "build:electron": "esbuild electron/main.ts --bundle --platform=node --outfile=dist-electron/main.cjs --external:electron --external:electron-updater --format=cjs",
     "build:all": "npm run build && npm run build:electron",
     "pack": "npm run build:all && electron-builder --mac",
     "lint": "eslint .",
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "electron-updater": "^6.8.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
@@ -42,16 +43,28 @@
   "build": {
     "appId": "com.agentdashboard.app",
     "productName": "Agent Dashboard",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "huyeon123",
+        "repo": "agent-dashboard"
+      }
+    ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["dmg"]
+      "target": [
+        "dmg"
+      ]
     },
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
     ],
     "extraResources": [
-      { "from": "data", "to": "data" }
+      {
+        "from": "data",
+        "to": "data"
+      }
     ],
     "directories": {
       "output": "release"

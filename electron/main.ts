@@ -1,4 +1,5 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 import fs from 'fs';
@@ -85,6 +86,38 @@ function createWindow(url: string): void {
   win.loadURL(url);
 }
 
+function setupAutoUpdater(): void {
+  // 패키징된 앱에서만 자동 업데이트 활성화
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', () => {
+    dialog.showMessageBox({
+      type: 'info',
+      title: '업데이트 발견',
+      message: '새 버전이 있습니다. 백그라운드에서 다운로드합니다.',
+      buttons: ['확인'],
+    });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox({
+      type: 'info',
+      title: '업데이트 준비 완료',
+      message: '업데이트가 다운로드됐습니다. 앱을 재시작하면 설치됩니다.',
+      buttons: ['지금 재시작', '나중에'],
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {
+    // 업데이트 서버 연결 실패는 조용히 무시
+  });
+}
+
 app.whenReady().then(async () => {
   setupDataDir();
 
@@ -103,6 +136,7 @@ app.whenReady().then(async () => {
   }
 
   createWindow(url);
+  setupAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
