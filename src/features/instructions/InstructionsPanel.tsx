@@ -6,6 +6,7 @@ import { useFetch } from '../../hooks/use-fetch';
 import { useToast } from '../../hooks/use-toast';
 import { useI18n } from '../../i18n';
 import { useScope } from '../../hooks/use-scope';
+import { useUiStore } from '../../store/ui-store';
 import type { InstructionsData } from '../../types/instructions';
 
 const MARKDOWN_PROSE_CLASSES = `prose prose-invert prose-sm max-w-none bg-bg-tertiary border border-border rounded-lg px-6 py-5 overflow-y-auto max-h-[calc(100vh-220px)]
@@ -182,19 +183,31 @@ function ProjectTab({ agent, t }: { agent: string; t: (k: string) => string }) {
 export function InstructionsPanel() {
   const { t } = useI18n();
   const currentAgent = useAgentStore((s) => s.currentAgent);
-  const { scope } = useScope();
+  const projectOnly = useUiStore((s) => s.projectOnly);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-text-primary">{t('instructions.globalTitle')}</h2>
-      </div>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-text-primary">{t('instructions.globalTitle')}</h2>
 
-      {scope === 'global' ? (
-        <GlobalTab agent={currentAgent} t={t} />
-      ) : (
-        <ProjectTab agent={currentAgent} t={t} />
+      {!projectOnly && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-accent-purple/15 text-accent-purple font-medium border border-accent-purple/20">
+              {t('common.global')}
+            </span>
+          </div>
+          <GlobalTab agent={currentAgent} t={t} />
+        </section>
       )}
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-accent-green/15 text-accent-green font-medium border border-accent-green/20">
+            {t('common.project')}
+          </span>
+        </div>
+        <ProjectTab agent={currentAgent} t={t} />
+      </section>
     </div>
   );
 }
