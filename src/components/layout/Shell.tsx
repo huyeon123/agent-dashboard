@@ -11,7 +11,7 @@ interface ShellProps {
 export function Shell({ activeTab, onTabChange, children }: ShellProps) {
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary">
-      <Header />
+      <Header onTabChange={onTabChange} />
       <TabNav activeTab={activeTab} onTabChange={onTabChange} />
       <main className="flex-1 p-6 overflow-y-auto">
         {children}
