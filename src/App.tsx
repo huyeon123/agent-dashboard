@@ -6,6 +6,7 @@ import { useToast } from './hooks/use-toast';
 
 import { OverviewPanel } from './features/overview/OverviewPanel';
 import { InstructionsPanel } from './features/instructions/InstructionsPanel';
+import { RulesPanel } from './features/rules/RulesPanel';
 import { SkillsPanel } from './features/skills/SkillsPanel';
 import { ConnectorsPanel } from './features/connectors/ConnectorsPanel';
 import { HooksPanel } from './features/hooks/HooksPanel';
@@ -13,8 +14,7 @@ import { PermissionsPanel } from './features/permissions/PermissionsPanel';
 import { AgentsDefPanel } from './features/agents-def/AgentsDefPanel';
 import { PluginsPanel } from './features/plugins/PluginsPanel';
 import { MonitorPanel } from './features/monitor/MonitorPanel';
-import { CapabilitiesPanel } from './features/capabilities/CapabilitiesPanel';
-
+import { SettingsPanel } from './features/settings/SettingsPanel';
 function App() {
   const { tab, setTab } = useTab('overview');
   const toasts = useToast((s) => s.toasts);
@@ -24,6 +24,7 @@ function App() {
     switch (tab) {
       case 'overview': return <OverviewPanel />;
       case 'instructions': return <InstructionsPanel />;
+      case 'rules': return <RulesPanel />;
       case 'skills': return <SkillsPanel />;
       case 'connectors': return <ConnectorsPanel />;
       case 'hooks': return <HooksPanel />;
@@ -31,7 +32,7 @@ function App() {
       case 'agentsDef': return <AgentsDefPanel />;
       case 'plugins': return <PluginsPanel />;
       case 'monitor': return <MonitorPanel />;
-      case 'capabilities': return <CapabilitiesPanel />;
+      case 'settings': return <SettingsPanel />;
       default: return <OverviewPanel />;
     }
   };

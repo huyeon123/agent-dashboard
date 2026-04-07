@@ -3,6 +3,7 @@ import { useI18n } from '../../i18n';
 const TAB_KEYS = [
   'overview',
   'instructions',
+  'rules',
   'skills',
   'connectors',
   'hooks',
@@ -10,7 +11,6 @@ const TAB_KEYS = [
   'agentsDef',
   'plugins',
   'monitor',
-  'capabilities',
 ] as const;
 
 interface TabNavProps {
