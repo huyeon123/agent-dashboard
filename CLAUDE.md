@@ -2,40 +2,7 @@
 
 Multi-Agent Dashboard — Claude Code, Codex, Copilot, OpenCode 등 AI 코딩 에이전트의 설정을 통합 관리하는 웹 대시보드.
 
-## 기술 스택
-
-- Frontend: React 19 + TypeScript + Tailwind CSS 4 + Zustand 5
-- Backend: Vite 8 미들웨어 플러그인 (REST API)
-- i18n: 한국어/영어 (src/i18n/)
-- 빌드: `npm run build` (tsc + vite build)
-
-## 프로젝트 구조
-
-```
-src/
-├── App.tsx                    — 탭 라우터
-├── main.tsx                   — 엔트리
-├── index.css                  — 디자인 토큰 (@theme)
-├── types/                     — TypeScript 인터페이스
-├── store/                     — Zustand (ui-store, agent-store)
-├── hooks/                     — use-fetch, use-tab, use-toast
-├── i18n/                      — ko.json, en.json
-├── components/layout/         — Shell, Header, TabNav
-├── components/ui/             — ToastContainer
-└── features/                  — 12개 피처 패널 (overview, instructions, skills, ...)
-
-server/
-├── index.ts                   — Vite 미들웨어 플러그인
-├── helpers.ts                 — 유틸리티
-├── parsers.ts                 — 마크다운/YAML 파서
-├── backup.ts                  — 파일 백업
-├── agents/                    — 레지스트리, 타입, 어댑터
-└── routes/                    — API 핸들러
-
-data/
-├── agents.json                — 에이전트 레지스트리
-└── projects.json              — 프로젝트 레지스트리
-```
+> 프로젝트 구조, 기술 스택, 개발 가이드, QA 체크리스트 등 상세 개발 지침은 **[AGENTS.md](./AGENTS.md)** 참조.
 
 ## 하네스: Dashboard Development
 
