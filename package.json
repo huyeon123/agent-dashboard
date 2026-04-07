@@ -1,7 +1,15 @@
 {
   "name": "agent-dashboard",
+  "version": "0.1.0",
+  "description": "Unified web dashboard for managing AI coding agents",
+  "keywords": ["ai", "dashboard", "react", "typescript", "claude-code", "copilot", "coding-agent"],
+  "author": "huyeon123",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huyeon123/agent-dashboard.git"
+  },
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
