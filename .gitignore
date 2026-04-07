@@ -14,6 +14,7 @@ dist-ssr
 
 # Keep data/ tracked (dashboard config)
 !data/
+data/projects.json
 
 # Workspace snapshots & OMC state
 _workspace*/

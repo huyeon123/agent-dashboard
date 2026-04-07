@@ -21,9 +21,14 @@ interface ProjectsData {
 }
 
 const PROJECTS_FILE = path.join(process.cwd(), 'data', 'projects.json');
+const DEFAULT_CATEGORIES = ['웹 애플리케이션', 'API 서버', 'CLI 도구', '라이브러리', '기타'];
 
 function loadProjects(): ProjectsData {
-  return safeReadJson<ProjectsData>(PROJECTS_FILE, { projects: [], categories: [] });
+  const data = safeReadJson<ProjectsData>(PROJECTS_FILE, { projects: [], categories: DEFAULT_CATEGORIES });
+  if (data.categories.length === 0) {
+    data.categories = DEFAULT_CATEGORIES;
+  }
+  return data;
 }
 
 function saveProjects(data: ProjectsData): void {
