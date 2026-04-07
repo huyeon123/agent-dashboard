@@ -4,6 +4,9 @@
       "type": "claude",
       "displayName": "Claude Code",
       "icon": "anthropic",
+      "processName": "claude",
+      "desktopApps": ["/Applications/Claude.app"],
+      "sessionStrategy": "pid-json",
       "enabled": true,
       "builtIn": true,
       "paths": {
@@ -19,13 +22,24 @@
         "agents": "agents",
         "plugins": "plugins",
         "hooks": "settings.json#hooks",
-        "mcp": [".mcp.json", "settings.json#mcpServers"]
+        "mcp": [".mcp.json", "settings.json#mcpServers"],
+        "instructionFiles": {
+          "global": ["~/.claude/CLAUDE.md"],
+          "project": ["CLAUDE.md", "CLAUDE.local.md", ".claude/CLAUDE.md", ".claude/CLAUDE.local.md"]
+        },
+        "rulesDir": {
+          "global": "~/.claude/rules",
+          "project": ".claude/rules"
+        }
       }
     },
     {
       "type": "codex",
       "displayName": "OpenAI Codex",
       "icon": "openai",
+      "processName": "codex",
+      "desktopApps": ["/Applications/Codex.app", "/Applications/CodexBar.app"],
+      "sessionStrategy": "codex-jsonl",
       "enabled": true,
       "builtIn": true,
       "paths": {
@@ -39,13 +53,18 @@
         "skills": "skills",
         "commands": "commands",
         "agents": "agents",
-        "mcp": ["config.toml#mcp"]
+        "mcp": ["config.toml#mcp"],
+        "instructionFiles": {
+          "global": ["~/.codex/AGENTS.md"],
+          "project": ["AGENTS.md"]
+        }
       }
     },
     {
       "type": "copilot",
       "displayName": "GitHub Copilot",
       "icon": "github",
+      "processName": "",
       "enabled": true,
       "builtIn": true,
       "paths": {
@@ -53,13 +72,21 @@
         "projectDir": ".github",
         "globalInstruction": "~/.copilot/instructions",
         "projectInstruction": ".github/copilot-instructions.md",
-        "skills": "prompts"
+        "skills": "prompts",
+        "instructionFiles": {
+          "global": ["~/.copilot/instructions"],
+          "project": [".github/copilot-instructions.md"]
+        },
+        "rulesDir": {
+          "project": ".github/copilot/rules"
+        }
       }
     },
     {
       "type": "opencode",
       "displayName": "OpenCode",
       "icon": "opencode",
+      "processName": "opencode",
       "enabled": true,
       "builtIn": true,
       "paths": {
@@ -73,7 +100,11 @@
         "commands": "commands",
         "agents": "agents",
         "plugins": "plugins",
-        "mcp": ["opencode.json#mcp"]
+        "mcp": ["opencode.json#mcp"],
+        "instructionFiles": {
+          "global": ["~/.config/opencode/AGENTS.md"],
+          "project": ["AGENTS.md"]
+        }
       }
     }
   ]
