@@ -1,6 +1,7 @@
 {
   "app": {
-    "title": "Multi-Agent Dashboard"
+    "title": "Agenda",
+    "subtitle": "Agent Dashboard"
   },
   "tabs": {
     "overview": "Overview",
@@ -16,9 +17,11 @@
   },
   "common": {
     "save": "Save",
+    "saving": "Saving...",
     "delete": "Delete",
     "cancel": "Cancel",
     "create": "Create",
+    "register": "Register",
     "edit": "Edit",
     "close": "Close",
     "confirm": "Confirm",
@@ -27,15 +30,31 @@
     "retry": "Retry",
     "search": "Search",
     "noData": "No data available",
+    "none": "None",
     "unsupported": "This agent does not support this feature",
     "global": "Global",
     "project": "Project",
+    "local": "Local",
     "user": "User",
     "plugin": "Plugin",
     "enabled": "Enabled",
     "disabled": "Disabled",
+    "builtIn": "Built-in",
+    "custom": "Custom",
+    "open": "Open",
+    "refresh": "Refresh",
+    "showRaw": "Show raw",
+    "hideRaw": "Hide raw",
+    "required": "Required",
+    "optional": "Optional",
+    "settings": "Settings",
+    "selectProject": "Select a project",
     "registerProjects": "Register projects in Settings first",
-    "projectOnly": "Project Only"
+    "projectOnly": "Project Only",
+    "add": "Add",
+    "editItem": "Edit",
+    "updated": "Updated",
+    "added": "Added"
   },
   "overview": {
     "title": "Dashboard Overview",
@@ -59,7 +78,15 @@
     "registerProjects": "Register projects in Settings to manage project instructions"
   },
   "rules": {
-    "title": "Rules"
+    "title": "Rules",
+    "createNew": "Create New Rule",
+    "name": "Rule Name",
+    "content": "Content",
+    "scope": "Scope",
+    "created": "Rule created",
+    "updated": "Rule updated",
+    "deleted": "Rule deleted",
+    "editRule": "Edit Rule"
   },
   "skills": {
     "title": "Skills Management",
@@ -69,7 +96,25 @@
     "content": "Content",
     "scope": "Scope",
     "deleted": "Skill deleted",
-    "created": "Skill created"
+    "created": "Skill created",
+    "deleteConfirm": "Delete skill \"{name}\"?",
+    "updated": "Skill updated",
+    "editSkill": "Edit Skill"
+  },
+  "connectors": {
+    "configuredServers": "{count} MCP servers configured",
+    "args": "{count} args",
+    "createNew": "Add MCP Server",
+    "serverName": "Server Name",
+    "commandLabel": "Command",
+    "argsLabel": "Arguments (one per line)",
+    "scopeLabel": "Scope",
+    "created": "MCP server added",
+    "updated": "MCP server updated",
+    "deleted": "MCP server deleted",
+    "editServer": "Edit Server",
+    "toggleDisabled": "Disabled",
+    "toggleEnabled": "Enabled"
   },
   "hooks": {
     "title": "Hooks Management",
@@ -79,13 +124,113 @@
     "toggleAll": "Toggle All",
     "permissions": "Permissions",
     "allow": "Allow",
-    "deny": "Deny"
+    "deny": "Deny",
+    "unknownEvent": "Unknown",
+    "timeout": "{ms}ms timeout",
+    "disabledWarning": "All hooks are currently disabled",
+    "createNew": "Add Hook",
+    "typeLabel": "Type",
+    "matcherLabel": "Matcher",
+    "commandLabel": "Command/URL/Prompt",
+    "timeoutLabel": "Timeout (ms, optional)",
+    "eventLabel": "Event",
+    "created": "Hook added",
+    "updated": "Hook updated",
+    "deleted": "Hook deleted",
+    "toggled": "Hooks toggled",
+    "enableAll": "Enable All",
+    "disableAll": "Disable All",
+    "editHook": "Edit Hook"
   },
   "agentsDef": {
     "title": "Agent Definitions",
     "model": "Model",
     "tools": "Tools",
-    "scope": "Scope"
+    "scope": "Scope",
+    "showRaw": "Show raw",
+    "hideRaw": "Hide raw",
+    "createNew": "Create New Agent",
+    "name": "Agent Name",
+    "description": "Description",
+    "modelLabel": "Model",
+    "toolsLabel": "Tools (comma-separated)",
+    "content": "Content",
+    "created": "Agent created",
+    "updated": "Agent updated",
+    "deleted": "Agent deleted",
+    "editAgent": "Edit Agent",
+    "scopeSelect": "Scope"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "addAllow": "Add Allow",
+    "addDeny": "Add Deny",
+    "placeholder": "e.g. Bash(file:*)",
+    "entry": "Permission Entry",
+    "created": "Permission added",
+    "updated": "Permission updated",
+    "deleted": "Permission deleted"
+  },
+  "plugins": {
+    "toggled": "Plugin status changed",
+    "enable": "Enable",
+    "disable": "Disable"
+  },
+  "monitor": {
+    "title": "Monitor",
+    "confirmKill": "Do you want to terminate process {pid}?",
+    "killed": "Process {pid} terminated",
+    "killFailed": "Failed to terminate process",
+    "cliVersion": "CLI Version",
+    "desktop": "Desktop",
+    "installed": "Installed",
+    "notInstalled": "Not Installed",
+    "activeSessions": "Active Sessions",
+    "sessionsTitle": "Running Sessions",
+    "noSessions": "No running sessions",
+    "status": "Status",
+    "session": "Session",
+    "startedAt": "Started",
+    "workingDirectory": "Working Directory",
+    "running": "Running",
+    "kill": "Terminate",
+    "autoRefresh": "Auto-refresh every {seconds}s"
+  },
+  "capabilities": {
+    "title": "Capabilities",
+    "featureHeader": "Feature",
+    "featureCount": "/ {count} features",
+    "hiddenDisabledAgents": "{count} disabled agents are hidden from this view.",
+    "features": {
+      "settings": {
+        "label": "Settings",
+        "description": "Settings file support"
+      },
+      "skills": {
+        "label": "Skills",
+        "description": "Skills and custom commands"
+      },
+      "commands": {
+        "label": "Commands",
+        "description": "Slash command support"
+      },
+      "hooks": {
+        "label": "Hooks",
+        "description": "Event hook system"
+      },
+      "agentDefs": {
+        "label": "Agent Defs",
+        "description": "Agent definition files"
+      },
+      "mcpServers": {
+        "label": "MCP",
+        "description": "MCP server integration"
+      },
+      "plugins": {
+        "label": "Plugins",
+        "description": "Plugin system"
+      }
+    }
   },
   "settings": {
     "title": "Settings Editor",
@@ -94,7 +239,75 @@
     "backup": "Backup created",
     "cleanup": "File Cleanup",
     "scanFiles": "Scan Files",
-    "guide": "Guide"
+    "guide": "Guide",
+    "subTabs": {
+      "settings": "Agent Settings",
+      "agentTypes": "Agent Types",
+      "projects": "Projects",
+      "capabilities": "Capabilities",
+      "guide": "Guide"
+    },
+    "agentTypesCount": "{count} agent types registered",
+    "projectsCount": "{count} projects registered",
+    "paths": "Paths",
+    "editPaths": "Edit paths",
+    "pathsSaved": "Paths saved",
+    "saveFailed": "Save failed",
+    "deleteFailed": "Delete failed",
+    "deleteQuestion": "Delete?",
+    "addCustomAgentType": "Add Custom Agent Type",
+    "addCustomAgent": "Add Custom Agent",
+    "fillRequiredFields": "Fill in all required fields",
+    "agentTypeCreated": "Agent type created",
+    "agentTypeDeleted": "Agent type deleted",
+    "type": "Type",
+    "displayName": "Display Name",
+    "icon": "Icon",
+    "requiredPaths": "Required Paths",
+    "optionalPaths": "Optional Paths",
+    "pathFor": "Path for {key}",
+    "noAgentTypes": "No agent types found",
+    "registerProject": "Register Project",
+    "path": "Path",
+    "name": "Name",
+    "category": "Category",
+    "agents": "Agents",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing...",
+    "enterPathFirst": "Enter a path first",
+    "detected": "Detected: {value}",
+    "analysisFailed": "Analysis failed",
+    "pathAndNameRequired": "Path and name are required",
+    "projectRegistered": "Project registered",
+    "projectRemoved": "Project removed",
+    "noProjectsYet": "No projects registered yet",
+    "registerFirstProject": "Register your first project",
+    "addedOn": "Added {date}",
+    "settingsFileUnsupported": "This agent does not support a settings file",
+    "autoBackupCreated": "Auto-backup created",
+    "guideBadge": "Getting Started",
+    "gettingStartedTitle": "1. Getting Started — Set up instruction files by agent",
+    "quickTipsTitle": "2. Quick Tips — Best practices for instruction files",
+    "gettingStarted": {
+      "claude": "Create a CLAUDE.md file in the project root or home directory. Claude Code reads it automatically when a session starts.",
+      "codex": "Create an AGENTS.md file in the project root. OpenAI Codex CLI uses it as agent behavior guidance.",
+      "copilot": "Create a copilot-instructions.md file in the .github directory. GitHub Copilot references it for code suggestions.",
+      "opencode": "Create an OPENCODE.md file in the project root. OpenCode loads it as session context."
+    },
+    "tips": {
+      "clearRoleTitle": "Define roles clearly",
+      "clearRoleDescription": "State the agent's role, goals, and constraints clearly at the top of the file.",
+      "projectStructureTitle": "Explain the project structure",
+      "projectStructureDescription": "Including directory layout, key files, and code conventions improves response quality.",
+      "prohibitionsTitle": "List prohibitions",
+      "prohibitionsDescription": "Call out actions the agent must never take, such as production deploys or exposing sensitive data.",
+      "updatesTitle": "Keep it updated",
+      "updatesDescription": "Update the instruction file whenever the project changes.",
+      "languageTitle": "Set the language",
+      "languageDescription": "Explicitly specifying the response language keeps communication consistent.",
+      "conciseTitle": "Keep it concise",
+      "conciseDescription": "Overly long instructions are less effective. Keep them focused on the essentials."
+    }
   },
   "agentSelector": {
     "label": "Select Agent"
