@@ -1,0 +1,80 @@
+{
+  "agents": [
+    {
+      "type": "claude",
+      "displayName": "Claude Code",
+      "icon": "anthropic",
+      "enabled": true,
+      "builtIn": true,
+      "paths": {
+        "globalHome": "~/.claude",
+        "projectDir": ".claude",
+        "globalInstruction": "~/.claude/CLAUDE.md",
+        "projectInstruction": "CLAUDE.md",
+        "settings": "settings.json",
+        "settingsFormat": "json",
+        "settingsOverride": "settings.local.json",
+        "skills": "skills",
+        "commands": "commands",
+        "agents": "agents",
+        "plugins": "plugins",
+        "hooks": "settings.json#hooks",
+        "mcp": [".mcp.json", "settings.json#mcpServers"]
+      }
+    },
+    {
+      "type": "codex",
+      "displayName": "OpenAI Codex",
+      "icon": "openai",
+      "enabled": true,
+      "builtIn": true,
+      "paths": {
+        "globalHome": "~/.codex",
+        "projectDir": ".codex",
+        "globalInstruction": "~/.codex/AGENTS.md",
+        "projectInstruction": "AGENTS.md",
+        "settings": "config.toml",
+        "settingsFormat": "toml",
+        "settingsOverride": "AGENTS.override.md",
+        "skills": "skills",
+        "commands": "commands",
+        "agents": "agents",
+        "mcp": ["config.toml#mcp"]
+      }
+    },
+    {
+      "type": "copilot",
+      "displayName": "GitHub Copilot",
+      "icon": "github",
+      "enabled": true,
+      "builtIn": true,
+      "paths": {
+        "globalHome": "~/.copilot",
+        "projectDir": ".github",
+        "globalInstruction": "~/.copilot/instructions",
+        "projectInstruction": ".github/copilot-instructions.md",
+        "skills": "prompts"
+      }
+    },
+    {
+      "type": "opencode",
+      "displayName": "OpenCode",
+      "icon": "opencode",
+      "enabled": true,
+      "builtIn": true,
+      "paths": {
+        "globalHome": "~/.config/opencode",
+        "projectDir": ".opencode",
+        "globalInstruction": "~/.config/opencode/AGENTS.md",
+        "projectInstruction": "AGENTS.md",
+        "settings": "opencode.json",
+        "settingsFormat": "jsonc",
+        "skills": "skills",
+        "commands": "commands",
+        "agents": "agents",
+        "plugins": "plugins",
+        "mcp": ["opencode.json#mcp"]
+      }
+    }
+  ]
+}
