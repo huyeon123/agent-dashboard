@@ -1,6 +1,16 @@
 import fs from 'fs';
 import path from 'path';
-import type { AgentConfig, AgentPaths, InstructionsData, SkillInfo, AgentSupports } from './types';
+import type {
+  AgentConfig,
+  AgentPaths,
+  InstructionsData,
+  SkillInfo,
+  AgentSupports,
+  InstructionFileStatus,
+  RulesCountResult,
+  RuleFileInfo,
+  RulesListResult,
+} from './types';
 import { resolveHome, getSupports } from './types';
 import { parseMarkdownSections, parseYamlFrontmatter } from '../parsers';
 import { safeReadFile, ensureDir, backupFile } from '../backup';
@@ -64,6 +74,95 @@ export class AgentAdapter {
       return true;
     }
     return false;
+  }
+
+  // --- Instruction file existence checks ---
+  checkGlobalInstructionFiles(): { files: InstructionFileStatus[] } {
+    const files = this.paths.instructionFiles?.global ?? [];
+    return {
+      files: files.map((filePath) => {
+        const resolved = resolveHome(filePath);
+        return {
+          name: path.basename(resolved),
+          path: resolved,
+          exists: fs.existsSync(resolved),
+        };
+      }),
+    };
+  }
+
+  checkProjectInstructionFiles(projectPath: string): { files: InstructionFileStatus[] } {
+    const files = this.paths.instructionFiles?.project ?? [];
+    return {
+      files: files.map((filePath) => {
+        const resolved = path.join(projectPath, filePath);
+        return {
+          name: filePath,
+          path: resolved,
+          exists: fs.existsSync(resolved),
+        };
+      }),
+    };
+  }
+
+  // --- Rules directory count ---
+  getGlobalRulesCount(): RulesCountResult {
+    const dir = this.paths.rulesDir?.global;
+    if (!dir) return { count: 0, dir: '' };
+    const resolved = resolveHome(dir);
+    return { count: this.countMdFiles(resolved), dir: resolved };
+  }
+
+  getProjectRulesCount(projectPath: string): RulesCountResult {
+    const dir = this.paths.rulesDir?.project;
+    if (!dir) return { count: 0, dir: '' };
+    const resolved = path.join(projectPath, dir);
+    return { count: this.countMdFiles(resolved), dir: resolved };
+  }
+
+  getGlobalRules(): RulesListResult {
+    const dir = this.paths.rulesDir?.global;
+    if (!dir) return { files: [], dir: '', unsupported: true };
+    const resolved = resolveHome(dir);
+    return { files: this.readMdFiles(resolved), dir: resolved };
+  }
+
+  getProjectRules(projectPath: string): RulesListResult {
+    const dir = this.paths.rulesDir?.project;
+    if (!dir) return { files: [], dir: '', unsupported: true };
+    const resolved = path.join(projectPath, dir);
+    return { files: this.readMdFiles(resolved), dir: resolved };
+  }
+
+  private countMdFiles(dir: string): number {
+    if (!fs.existsSync(dir)) return 0;
+    try {
+      return fs.readdirSync(dir, { withFileTypes: true })
+        .filter((e) => e.isFile() && e.name.endsWith('.md'))
+        .length;
+    } catch {
+      return 0;
+    }
+  }
+
+  private readMdFiles(dir: string): RuleFileInfo[] {
+    if (!fs.existsSync(dir)) return [];
+
+    try {
+      return fs.readdirSync(dir, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((entry) => {
+          const filePath = path.join(dir, entry.name);
+          return {
+            name: entry.name,
+            path: filePath,
+            raw: safeReadFile(filePath),
+          };
+        });
+    } catch {
+      return [];
+    }
   }
 
   // --- Settings ---
@@ -445,9 +544,37 @@ export class AgentAdapter {
 
     if (!fs.existsSync(registryPath)) return [];
 
+    const mapScope = (s: string): string => {
+      if (s === 'user') return 'global';
+      if (s === 'local') return 'project';
+      return s;
+    };
+
     try {
       const raw = fs.readFileSync(registryPath, 'utf-8');
       const data = JSON.parse(raw);
+
+      // v2 format: { version: 2, plugins: { "name@marketplace": [...] } }
+      if (data && data.version === 2 && data.plugins && typeof data.plugins === 'object' && !Array.isArray(data.plugins)) {
+        const results: Array<{ name: string; version: string; scope: string; enabled: boolean; path: string }> = [];
+        for (const [key, entries] of Object.entries(data.plugins)) {
+          const pluginName = key.split('@')[0] || key;
+          if (!Array.isArray(entries)) continue;
+          for (const entry of entries) {
+            const e = entry as Record<string, unknown>;
+            results.push({
+              name: pluginName,
+              version: (e.version as string) || '0.0.0',
+              scope: mapScope((e.scope as string) || 'user'),
+              enabled: true,
+              path: (e.installPath as string) || pluginsDir,
+            });
+          }
+        }
+        return results;
+      }
+
+      // v1 format: plain array
       if (Array.isArray(data)) {
         return data.map((p: Record<string, unknown>) => ({
           name: (p.name as string) || 'unknown',
@@ -462,5 +589,9 @@ export class AgentAdapter {
     }
 
     return [];
+  }
+
+  getProjectPlugins(projectPath: string): Array<{ name: string; version: string; scope: string; enabled: boolean; path: string }> {
+    return this.getPlugins().filter((p) => p.scope === 'project' && p.path.startsWith(projectPath));
   }
 }
