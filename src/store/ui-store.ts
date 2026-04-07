@@ -18,6 +18,8 @@ interface UiState {
   setProjectPath: (path: string | null) => void;
   projects: Project[];
   setProjects: (projects: Project[]) => void;
+  projectOnly: boolean;
+  setProjectOnly: (v: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -42,4 +44,9 @@ export const useUiStore = create<UiState>((set) => ({
   },
   projects: [],
   setProjects: (projects) => set({ projects }),
+  projectOnly: (localStorage.getItem('projectOnly') === 'true') || false,
+  setProjectOnly: (v) => {
+    localStorage.setItem('projectOnly', String(v));
+    set({ projectOnly: v });
+  },
 }));
