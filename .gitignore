@@ -20,6 +20,9 @@ _workspace*/
 .omc/
 .omx/
 
+# Claude Code local config
+.claude/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
